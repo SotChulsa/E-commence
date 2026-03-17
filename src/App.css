@@ -35,10 +35,10 @@ body {
 .buttons-container {
   display: flex;
   align-items: center;
-  gap: 22px;
+  gap: 20px;
   font-family: 'Courier New', Courier, monospace;
   font-weight: bold;
-  margin-left: 80%;
+  margin-left: 78%;
   margin-top: -4%;
 }
 
