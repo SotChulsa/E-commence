@@ -36,6 +36,7 @@
 
 .form-group {
   margin-bottom: 20px;
+  position: relative; /* Added for password toggle positioning */
 }
 
 .form-group label {
@@ -44,6 +45,8 @@
   color: #555;
   font-weight: 500;
 }
+
+/* Removed the general button styling that was causing issues */
 
 .form-group input {
   width: 100%;
@@ -65,9 +68,10 @@
 
 .password-input-wrapper {
   position: relative;
+  width: 100%;
 }
 
-.password-toggle {
+.password-toggle-btn {
   position: absolute;
   right: 12px;
   top: 50%;
@@ -77,9 +81,18 @@
   color: #667eea;
   cursor: pointer;
   font-size: 14px;
+  padding: 5px 10px;
+  z-index: 2;
+  font-weight: 500;
+  transition: color 0.2s;
 }
 
-.password-toggle:disabled {
+.password-toggle-btn:hover:not(:disabled) {
+  color: #764ba2;
+  text-decoration: underline;
+}
+
+.password-toggle-btn:disabled {
   color: #999;
   cursor: not-allowed;
 }
@@ -117,11 +130,13 @@
 
 .remember-me input {
   width: auto;
+  margin: 0;
 }
 
 .forgot-password {
   color: #667eea;
   text-decoration: none;
+  font-size: 14px;
 }
 
 .forgot-password:hover {
@@ -137,7 +152,8 @@
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.2s;
+  transition: transform 0.2s, opacity 0.2s;
+  width: 100%;
 }
 
 .login-button:hover:not(:disabled) {
@@ -159,8 +175,29 @@
   color: #667eea;
   text-decoration: none;
   font-weight: 500;
+  margin-left: 5px;
 }
 
 .signup-link:hover {
+  text-decoration: underline;
+}
+
+/* Back link styling */
+.back-link {
+  text-align: center;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+}
+
+.back-link a {
+  color: #666;
+  text-decoration: none;
+  font-size: 14px;
+  transition: color 0.2s;
+}
+
+.back-link a:hover {
+  color: #667eea;
   text-decoration: underline;
 }

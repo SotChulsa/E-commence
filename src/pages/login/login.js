@@ -108,7 +108,7 @@ const Login = () => {
           Don't have an account? <a href="/register">Sign up</a>
         </p>
         <p>
-          <a href="/">← Back to Home</a>
+          <a href="/">← Back to Main Page</a>
         </p>
       </div>
     </div>

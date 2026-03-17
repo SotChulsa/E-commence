@@ -3,7 +3,9 @@ import profile from './profile.svg';
 import heart from './heart.svg';
 import cart from './cart.svg';
 import book from './new-book.svg';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Login from './pages/login/login';
+import Navbar from './components/navbar';
 
 function AppContent() {
   return (
@@ -17,15 +19,9 @@ function AppContent() {
           <input type="text" placeholder="What are you looking for?"></input>
         </div>
         <div className="buttons-container">
-          <nav>
-            <ul>
-              <li>
-                <a href="/page/login">
-                  <img src={profile} alt="Profile"/>
-                </a>
-              </li>
-            </ul>        
-          </nav>  
+          <a href="/login">
+            <img src={profile} alt="Profile"/>
+          </a>
           <a href="/#">
             <img src={heart} alt="Wishlist"/>
           </a>
@@ -33,6 +29,7 @@ function AppContent() {
             <img src={cart} alt="Cart"/>
             <p>Cart</p>
           </a>
+          <Navbar />
         </div>
       </header>
       <div className="trending-section">
@@ -130,7 +127,11 @@ function AppContent() {
 function App() {
   return (
     <BrowserRouter>
-      <AppContent />
+      <Routes>
+        <Route path="/" element={<AppContent />} />
+        <Route path="/login" element={<Login />} />
+        {/* Add more routes here as needed */}
+      </Routes>
     </BrowserRouter>
   );
 }
