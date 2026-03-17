@@ -57,6 +57,7 @@ function App() {
             </div>
         </div>
         <div className="top-sellers-container">
+          <button className="previous-button">Previous</button>          
           <div className="book-card">
             <img src={book} alt="Book 1"/>
             <h3>Book Title 1</h3>
@@ -81,6 +82,19 @@ function App() {
             <h4>Price</h4>
             <p>Author Name 4</p>
           </div>
+          <div className="book-card">
+            <img src={book} alt="Book 5"/>
+            <h3>Book Title 5</h3>
+            <h4>Price</h4>
+            <p>Author Name 5</p>
+          </div>
+          <div className="book-card">
+            <img src={book} alt="Book 6"/>
+            <h3>Book Title 6</h3>
+            <h4>Price</h4>
+            <p>Author Name 6</p>
+          </div>
+          <button className="next-button">Next</button>          
         </div>
       </div>
     <div className="Recommanded-section">
