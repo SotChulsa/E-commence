@@ -114,17 +114,6 @@ body {
   border-radius: 12px;
 }
 
-.top-sellers-container .book-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin: 50px 50px 50px 50px;
-}
-
-.top-sellers-container.book-card:nth-child(5) {
-  display: none;
-}
-
 .dropbtn {
   background-color: #04AA6D;
   color: white;

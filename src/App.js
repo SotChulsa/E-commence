@@ -16,7 +16,7 @@ function App() {
           <input type="text" placeholder="What are you looking for?"></input>
         </div>
       <div className="buttons-container">
-          <a href="/#">
+          <a href="/Login/login.js">
       <img src={profile} alt="Profile"/>
           </a>
           <a href="/#">
@@ -45,7 +45,7 @@ function App() {
       <div className="top-sellers-section">
         <h2>Top Sellers</h2>
         <div className="dropdown">
-          <button class="dropbtn">Genre Sort By</button>
+          <button className="dropbtn">Genre Sort By</button>
             <div className="dropdown-content">
               <a href="/#">Adventure</a>
               <a href="/#">Romance</a>
@@ -57,7 +57,6 @@ function App() {
             </div>
         </div>
         <div className="top-sellers-container">
-          <button className="previous-button">Previous</button>          
           <div className="book-card">
             <img src={book} alt="Book 1"/>
             <h3>Book Title 1</h3>
@@ -82,20 +81,7 @@ function App() {
             <h4>Price</h4>
             <p>Author Name 4</p>
           </div>
-          <div className="book-card">
-            <img src={book} alt="Book 5"/>
-            <h3>Book Title 5</h3>
-            <h4>Price</h4>
-            <p>Author Name 5</p>
           </div>
-          <div className="book-card">
-            <img src={book} alt="Book 6"/>
-            <h3>Book Title 6</h3>
-            <h4>Price</h4>
-            <p>Author Name 6</p>
-          </div>
-          <button className="next-button">Next</button>          
-        </div>
       </div>
     <div className="Recommanded-section">
       <h2>Recommanded For You</h2>
