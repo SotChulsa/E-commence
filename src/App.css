@@ -25,14 +25,33 @@ body {
   margin: 20px 80% 0 0;
 }
 
+.App-header h2 {
+  font-size: 40px;
+  margin: 40px 80% -40px 20px;
+  font-family: 'Courier New', Courier, monospace;
+  width: 500px;
+}
+
 .buttons-container {
   display: flex;
-  margin: -50px 0 0 auto;
-  align-items: right;
+  align-items: center;
+  gap: 22px;
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: bold;
+  margin-left: 80%;
+  margin-top: -4%;
 }
-.buttons-container img {
+
+.buttons-container a {
   display: flex;
-  margin: 0px 20px 40px auto;
+  align-items: right;
+  gap: 6px;
+  text-decoration: none;
+  color: black;
+}
+
+.buttons-container img {
+  margin: 0;
 }
 
 .search-container {
@@ -48,4 +67,126 @@ body {
   width: 250px;
   outline: none;
 }
+
+.trending-container {
+  font-family: 'Courier New', Courier, monospace;
+  display: flex;
+  margin: 50px auto;
+  font-size: 24px;
+  background-color: rgb(154, 154, 154);
+  max-width: 95%;
+  max-height: 95%;
+  border-radius: 12px;
+}
+
+.trending-container img {
+  display: flex;
+  width: 25%;
+  height: 20%;
+  margin: 40px 820px 40px 60px;
+  border-radius: 12px;
+}
+
+.trending-container h2 {  
+  display: flex;
+  font-size: 25px;
+  text-align: left;
+  align-items: center;
+  margin: -180px 20px 240px -460px;
+}
+
+.trending-container p {
+  display: flex;
+  font-size: 18px;
+  text-align: left;
+  align-items: center;
+  margin: -60px 20px -80px -460px;
+}
+
+.top-sellers-container {
+  font-family: 'Courier New', Courier, monospace;
+  display: flex;
+  margin: 50px auto;
+  font-size: 24px;
+  background-color: rgb(154, 154, 154);
+  max-width: 95%;
+  max-height: 95%;
+  border-radius: 12px;
+}
+
+.dropbtn {
+  background-color: #04AA6D;
+  color: white;
+  padding: 16px;
+  font-size: 16px;
+  border: none;
+}
+
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.dropdown-content a:hover {background-color: #ddd;}
+
+.dropdown:hover .dropdown-content {display: block;}
+
+.dropdown:hover .dropbtn {background-color: #3e8e41;}
+
+.dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: #f1f1f1;
+  min-width: 160px;
+  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+  z-index: 1;
+}
+
+.dropdown-content a {
+  color: black;
+  padding: 12px 16px;
+  text-decoration: none;
+  display: block;
+}
+
+
+.Recommanded-container {
+  font-family: 'Courier New', Courier, monospace;
+  display: flex;
+  margin: 50px auto;
+  font-size: 24px;
+  background-color: rgb(154, 154, 154);
+  max-width: 95%;
+  max-height: 95%;
+  border-radius: 12px;
+}
+
+.book-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 60px 60px 60px 60px;
+}
+
+.book-card img {
+  width: 200px;
+  height: 300px;
+  border-radius: 12px;
+}
+
+.book-card h3 {
+  margin: 10px 0 5px 0;
+}
+
+.book-card h4 {
+  margin: 0;
+  color: green;
+}
+
+.book-card p {
+  margin: 0;
+}
+
+
+
 
