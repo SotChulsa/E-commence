@@ -16,13 +16,13 @@ function App() {
           <input type="text" placeholder="What are you looking for?"></input>
         </div>
       <div className="buttons-container">
-          <a href="#">
+          <a href="/#">
       <img src={profile} alt="Profile"/>
           </a>
-          <a href="#">
+          <a href="/#">
             <img src={heart} alt="Wishlist"/>
           </a>
-          <a href="#">
+          <a href="/#">
             <img src={cart} alt="Cart"/>
             <p>Cart</p>
           </a>
@@ -47,13 +47,13 @@ function App() {
         <div className="dropdown">
           <button class="dropbtn">Genre Sort By</button>
             <div className="dropdown-content">
-              <a href="#">Adventure</a>
-              <a href="#">Romance</a>
-              <a href="#">Sci-Fi</a>
-              <a href="#">Fantasy</a>
-              <a href="#">Horror</a>
-              <a href="#">Thriller</a>
-              <a href="#">Mystery</a>
+              <a href="/#">Adventure</a>
+              <a href="/#">Romance</a>
+              <a href="/#">Sci-Fi</a>
+              <a href="/#">Fantasy</a>
+              <a href="/#">Horror</a>
+              <a href="/#">Thriller</a>
+              <a href="/#">Mystery</a>
             </div>
         </div>
         <div className="top-sellers-container">
