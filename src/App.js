@@ -3,11 +3,35 @@ import profile from './profile.svg';
 import heart from './heart.svg';
 import cart from './cart.svg';
 import book from './new-book.svg';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import { useState, useRef, useEffect } from 'react';
 import Login from './pages/login/login';
 import Navbar from './components/navbar';
+import Register from './pages/register/register';
 
+// Main content of the app, including header, trending section, top sellers, and footer
 function AppContent() {
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false); 
+  const dropdownRef = useRef(null);
+
+  const toggleDropdown = () => {
+    setIsDropdownOpen(!isDropdownOpen);
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
   return (
     <div className="App">
       <header className="App-header">
@@ -19,9 +43,24 @@ function AppContent() {
           <input type="text" placeholder="What are you looking for?"></input>
         </div>
         <div className="buttons-container">
-          <a href="/login">
-            <img src={profile} alt="Profile"/>
-          </a>
+          <div className="profile-dropdown" ref={dropdownRef}>
+            <img 
+              src={profile} 
+              alt="Profile" 
+              onClick={toggleDropdown}
+              className="profile-icon"
+            />
+            {isDropdownOpen && (
+              <div className="dropdown-menu">
+                <Link to="/login" className="dropdown-item" onClick={toggleDropdown}>
+                  Login
+                </Link>
+                <Link to="/register" className="dropdown-item" onClick={toggleDropdown}>
+                  Register
+                </Link>
+              </div>
+            )}
+          </div>
           <a href="/#">
             <img src={heart} alt="Wishlist"/>
           </a>
@@ -130,7 +169,7 @@ function App() {
       <Routes>
         <Route path="/" element={<AppContent />} />
         <Route path="/login" element={<Login />} />
-        {/* Add more routes here as needed */}
+        <Route path="/register" element={<Register />} />
       </Routes>
     </BrowserRouter>
   );

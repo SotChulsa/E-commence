@@ -1,5 +1,6 @@
 .App {
   text-align: center;
+  background-color: antiquewhite;
 }
 
 body {
@@ -44,14 +45,37 @@ body {
 
 .buttons-container a {
   display: flex;
-  align-items: right;
-  gap: 6px;
-  text-decoration: none;
+  align-items: center;
+  gap: 15px;
+  position: relative;  
+  z-index: 10;
   color: black;
+  background: none;
 }
 
 .buttons-container img {
   margin: 0;
+}
+
+.profile-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.profile-dropdown img {
+  width: 50px;
+  height: 50px;
+  cursor: pointer;
+  margin-bottom: -10px;
+}
+
+.profile-icon {
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+  transition: transform 0.2s;
+  position: relative;
+  z-index: 5;
 }
 
 .search-container {
@@ -127,10 +151,21 @@ body {
   display: inline-block;
 }
 
+.dropdown-menu {
+  position: absolute;  
+  top: 100%;           
+  right: 0;            
+  margin-top: 5px;     
+  background-color: none;
+  min-width: 120px;
+  border: none;
+  z-index: 1000;       
+  overflow: hidden;
+  animation: slideDown 0.2s ease-out;
+}
+
 .dropdown-content a:hover {background-color: #ddd;}
-
 .dropdown:hover .dropdown-content {display: block;}
-
 .dropdown:hover .dropbtn {background-color: #3e8e41;}
 
 .dropdown-content {

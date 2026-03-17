@@ -3,6 +3,7 @@
 import { useState } from "react";
 import "./login.css";
 import { ButtonComponent } from "../../components/buttons/buttons";
+import { Link } from "react-router-dom";
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
@@ -78,9 +79,12 @@ const LoginPage = () => {
 
   return (
     <div className="login-container">
-      <div className="logo">
-        <h1>DigiPaper</h1>
-      </div>
+      <header className="logo">
+        <link rel="preconnect" href="https://fonts.googleapis.com"></link>
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous"></link>
+        <link href="https://fonts.googleapis.com/css2?family=Irish+Grover&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet"></link>
+        <h1>Sign In</h1>
+      </header>
 
       {message && (
         <div>
@@ -121,7 +125,7 @@ const LoginPage = () => {
               disabled={loading}
             /> Remember me
           </label>
-          <a href="#">Forgot your password?</a>
+          <a href="/#">Forgot your password?</a>
         </div>
 
         <ButtonComponent 
@@ -141,7 +145,7 @@ const LoginPage = () => {
       </div>
 
       <p>
-        Don't have an account? <a href="/register">Register</a>
+        Don't have an account? <Link to="/register">Register</Link>
       </p>
     </div>
   );
