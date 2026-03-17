@@ -1,118 +1,150 @@
-// src/pages/login.js
-import React, { useState } from 'react';
-import './login.css'; 
+"use client";
 
-const Login = () => {
+import { useState } from "react";
+import "./login.css";
+import { ButtonComponent } from "../../components/buttons/buttons";
+
+const LoginPage = () => {
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    rememberMe: false
+    email: "",
+    password: "",
+    remember: false
   });
 
-  const [errors, setErrors] = useState({});
-  const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+  const [messageType, setMessageType] = useState("error");
 
-  const handleChange = (e) => {
+  const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData({
-      ...formData,
-      [name]: type === 'checkbox' ? checked : value
-    });
-  };
-
-  const validateForm = () => {
-    const newErrors = {};
-    if (!formData.email) {
-      newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email is invalid';
-    }
-    if (!formData.password) {
-      newErrors.password = 'Password is required';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
-    }
-    return newErrors;
+    
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value
+    }));
+    
+    if (message) setMessage("");
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const newErrors = validateForm();
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
+
+    if (!formData.email || !formData.password) {
+      setMessage("Please enter email and password");
+      setMessageType("error");
       return;
     }
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      alert('Login successful!');
-    }, 1500);
+
+    setLoading(true);
+    setMessage("");
+
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        localStorage.setItem("token", data.token);
+        sessionStorage.setItem("user", JSON.stringify(data.user));
+      }
+
+      if (response.ok) {
+        setMessage("Login successful! Redirecting");
+        setMessageType("success");
+
+        setTimeout(() => {
+          window.location.href = "/Dashboard";
+        }, 1000);
+      } else {
+        setMessage(data.error || "Login failed");
+        setMessageType("error");
+      }
+    } catch (error) {
+      setMessage("Network error. Please try again.");
+      setMessageType("error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="login-container">
-      <div className="login-card">
-        <h2>Login to DigiPaper</h2>
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>Email</label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="Enter your email"
-            />
-            {errors.email && <span className="error">{errors.email}</span>}
-          </div>
-          
-          <div className="form-group">
-            <label>Password</label>
-            <input
-              type={showPassword ? 'text' : 'password'}
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              placeholder="Enter your password"
-            />
-            <button 
-              type="button" 
-              onClick={() => setShowPassword(!showPassword)}
-              className="password-toggle"
-            >
-              {showPassword ? 'Hide' : 'Show'}
-            </button>
-            {errors.password && <span className="error">{errors.password}</span>}
-          </div>
-          
-          <div className="form-options">
-            <label>
-              <input
-                type="checkbox"
-                name="rememberMe"
-                checked={formData.rememberMe}
-                onChange={handleChange}
-              />
-              Remember me
-            </label>
-            <a href="/forgot-password">Forgot Password?</a>
-          </div>
-          
-          <button type="submit" disabled={isLoading}>
-            {isLoading ? 'Logging in...' : 'Login'}
-          </button>
-        </form>
-        
-        <p>
-          Don't have an account? <a href="/register">Sign up</a>
-        </p>
-        <p>
-          <a href="/">← Back to Main Page</a>
-        </p>
+      <div className="logo">
+        <h1>DigiPaper</h1>
       </div>
+
+      {message && (
+        <div>
+          {message}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit}>
+        <label htmlFor="email">Email</label>
+        <input 
+          type="email" 
+          id="email" 
+          name="email" 
+          value={formData.email}
+          onChange={handleInputChange}
+          disabled={loading}
+          required
+        />
+
+        <label htmlFor="password">Password</label>
+        <input 
+          type="password" 
+          id="password" 
+          name="password" 
+          value={formData.password}
+          onChange={handleInputChange}
+          disabled={loading}
+          required
+        />
+
+        <div className="login-options">
+          <label>
+            <input 
+              type="checkbox" 
+              name="remember"
+              checked={formData.remember}
+              onChange={handleInputChange}
+              disabled={loading}
+            /> Remember me
+          </label>
+          <a href="#">Forgot your password?</a>
+        </div>
+
+        <ButtonComponent 
+          label={loading ? "Logging in" : "Continue"} 
+          type="submit"
+          disabled={loading}
+        />
+      </form>
+
+      <div className="divider">Or continue with</div>
+
+      <div className="social-login">
+        <img src="https://img.icons8.com/?size=100&id=17935&format=png&color=000000" alt="Google" />
+        <img src="https://img.icons8.com/?size=100&id=890&format=png&color=000000" alt="Apple" />
+        <img src="https://img.icons8.com/?size=100&id=118489&format=png&color=000000" alt="Facebook" />
+        <img src="https://img.icons8.com/?size=100&id=phOKFKYpe00C&format=png&color=000000" alt="Twitter" />
+      </div>
+
+      <p>
+        Don't have an account? <a href="/register">Register</a>
+      </p>
     </div>
   );
 };
 
-export default Login;
+export default LoginPage;
