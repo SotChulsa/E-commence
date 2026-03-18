@@ -1,13 +1,24 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import './App.css';
 import profile from './profile.svg';
 import heart from './heart.svg';
 import cart from './cart.svg';
 import bookCover from './new-book.svg';
-import { getBooks, loginUser, registerUser, verifyOtp } from './api';
+import {
+  addToCart,
+  createOrder,
+  forgotPassword,
+  getBooks,
+  getCart,
+  loginUser,
+  logoutUser,
+  refreshTokens,
+  registerUser,
+  removeFromCart,
+  verifyOtp,
+} from './api';
 
 const AUTH_STORAGE_KEY = 'digipaper_auth';
-const CART_STORAGE_KEY = 'digipaper_cart';
 
 const MOCK_BOOKS = [
   {
@@ -103,19 +114,16 @@ const readStoredAuth = () => {
   }
 };
 
-const readStoredCart = () => {
-  try {
-    const raw = localStorage.getItem(CART_STORAGE_KEY);
-    if (!raw) {
-      return [];
-    }
-
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (_error) {
-    return [];
-  }
-};
+const normalizeAuthPayload = (payload) => ({
+  user: {
+    _id: payload._id,
+    name: payload.name,
+    email: payload.email,
+    role: payload.role,
+  },
+  accessToken: payload.accessToken,
+  refreshToken: payload.refreshToken,
+});
 
 function App() {
   const initialAuth = readStoredAuth();
@@ -131,7 +139,7 @@ function App() {
   const [booksLoading, setBooksLoading] = useState(true);
   const [booksError, setBooksError] = useState('');
 
-  const [cartItems, setCartItems] = useState(readStoredCart);
+  const [cartItems, setCartItems] = useState([]);
 
   const [query, setQuery] = useState('');
   const [selectedGenre, setSelectedGenre] = useState('All');
@@ -182,9 +190,79 @@ function App() {
     );
   }, [user, accessToken, refreshToken]);
 
+  const syncAuthState = ({ user: nextUser, accessToken: nextAccess, refreshToken: nextRefresh }) => {
+    setUser(nextUser);
+    setAccessToken(nextAccess);
+    setRefreshToken(nextRefresh);
+  };
+
+  const withTokenRefresh = useCallback(async (callback) => {
+    try {
+      return await callback(accessToken);
+    } catch (error) {
+      if (error.status !== 401 || !refreshToken) {
+        throw error;
+      }
+
+      const refreshed = await refreshTokens(refreshToken);
+      const nextAccess = refreshed.accessToken;
+      const nextRefresh = refreshed.refreshToken;
+      setAccessToken(nextAccess);
+      setRefreshToken(nextRefresh);
+      return callback(nextAccess);
+    }
+  }, [accessToken, refreshToken]);
+
+  const hydrateCart = useCallback((cartData, catalog) => {
+    const sourceBooks = catalog || books;
+    const items = cartData?.items || [];
+    const mapped = items
+      .map((entry) => {
+        const rawBook = entry.book;
+        const bookObject =
+          rawBook && typeof rawBook === 'object'
+            ? rawBook
+            : sourceBooks.find((book) => book._id === String(rawBook));
+
+        if (!bookObject) {
+          return null;
+        }
+
+        return {
+          _id: bookObject._id,
+          title: bookObject.title,
+          author: bookObject.author,
+          image: bookObject.image,
+          price: bookObject.price,
+          quantity: entry.quantity || 1,
+        };
+      })
+      .filter(Boolean);
+
+    setCartItems(mapped);
+  }, [books]);
+
+  const refreshCartState = useCallback(async (tokenToUse, catalog) => {
+    const cartData = await getCart(tokenToUse);
+    hydrateCart(cartData, catalog);
+  }, [hydrateCart]);
+
   useEffect(() => {
-    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cartItems));
-  }, [cartItems]);
+    if (!user || !accessToken) {
+      setCartItems([]);
+      return;
+    }
+
+    const loadCart = async () => {
+      try {
+        await withTokenRefresh((token) => refreshCartState(token, books));
+      } catch (_error) {
+        setCartItems([]);
+      }
+    };
+
+    loadCart();
+  }, [user, accessToken, refreshToken, books, withTokenRefresh, refreshCartState]);
 
   const filteredBooks = useMemo(() => {
     let working = books.length > 0 ? books : MOCK_BOOKS;
@@ -233,49 +311,52 @@ function App() {
     setIsDrawerOpen(false);
   };
 
-  const addBookToLocalCart = (item) => {
-    setCartItems((prev) => {
-      const index = prev.findIndex((entry) => entry._id === item._id);
-      if (index < 0) {
-        return [...prev, { ...item, quantity: 1 }];
-      }
+  const handleAddToCart = async (bookId) => {
+    if (!accessToken) {
+      setUiMessage('Please login from the profile icon to use cart.');
+      openAuth('signin');
+      return;
+    }
 
-      return prev.map((entry, i) =>
-        i === index ? { ...entry, quantity: entry.quantity + 1 } : entry
-      );
-    });
-  };
-
-  const handleAddToCart = (bookId) => {
     const item = (books.length > 0 ? books : MOCK_BOOKS).find((entry) => entry._id === bookId);
     if (!item) {
       setUiMessage('Book is unavailable right now.');
       return;
     }
 
-    addBookToLocalCart(item);
-    setUiMessage('Added to cart.');
+    try {
+      await withTokenRefresh((token) => addToCart(token, bookId));
+      await withTokenRefresh((token) => refreshCartState(token, books));
+      setUiMessage('Added to cart.');
+    } catch (error) {
+      setUiMessage(error.message || 'Could not add item to cart.');
+    }
   };
 
-  const handleRemoveFromCart = (bookId) => {
-    setCartItems((prev) => prev.filter((item) => item._id !== bookId));
+  const handleRemoveFromCart = async (bookId) => {
+    if (!accessToken) {
+      return;
+    }
+
+    try {
+      await withTokenRefresh((token) => removeFromCart(token, bookId));
+      await withTokenRefresh((token) => refreshCartState(token, books));
+    } catch (error) {
+      setUiMessage(error.message || 'Could not remove item from cart.');
+    }
   };
 
-  const handleChangeQuantity = (bookId, delta) => {
-    setCartItems((prev) =>
-      prev
-        .map((item) => {
-          if (item._id !== bookId) {
-            return item;
-          }
+  const handleIncreaseQuantity = async (bookId) => {
+    if (!accessToken) {
+      return;
+    }
 
-          return {
-            ...item,
-            quantity: Math.max(0, (item.quantity || 1) + delta),
-          };
-        })
-        .filter((item) => item.quantity > 0)
-    );
+    try {
+      await withTokenRefresh((token) => addToCart(token, bookId));
+      await withTokenRefresh((token) => refreshCartState(token, books));
+    } catch (error) {
+      setUiMessage(error.message || 'Could not update quantity.');
+    }
   };
 
   const handleSignIn = async () => {
@@ -290,27 +371,17 @@ function App() {
 
     try {
       const payload = await loginUser({ email, password });
-      setUser({
-        _id: payload._id,
-        name: payload.name,
-        email: payload.email,
-        role: payload.role,
-      });
-      setAccessToken(payload.accessToken || 'local-access-token');
-      setRefreshToken(payload.refreshToken || 'local-refresh-token');
+      syncAuthState(normalizeAuthPayload(payload));
       setAuthMessage('Logged in successfully.');
       setActiveView('home');
-    } catch (_error) {
-      setUser({
-        _id: 'local-user',
-        name: email.split('@')[0] || 'Reader',
-        email,
-        role: 'user',
-      });
-      setAccessToken('local-access-token');
-      setRefreshToken('local-refresh-token');
-      setAuthMessage('Frontend demo login completed.');
-      setActiveView('home');
+    } catch (error) {
+      const message = error.message || 'Login failed.';
+      if (message.toLowerCase().includes('verify otp')) {
+        setAuthMode('verify');
+        setAuthError('Please verify OTP first. Check your email, then enter OTP in Verification.');
+      } else {
+        setAuthError(message);
+      }
     } finally {
       setAuthLoading(false);
     }
@@ -333,26 +404,34 @@ function App() {
 
     try {
       await registerUser({ name, email, password });
-      setAuthMessage('Account created. Enter your verification code.');
+      setAuthMessage('Account created. Check your email for OTP, then verify your account.');
       setAuthMode('verify');
-    } catch (_error) {
-      setAuthMessage('Frontend demo registration completed.');
-      setAuthMode('verify');
+    } catch (error) {
+      setAuthError(error.message || 'Registration failed.');
     } finally {
       setAuthLoading(false);
     }
   };
 
-  const handleRecoveryRequest = () => {
+  const handleRecoveryRequest = async () => {
     if (!recoveryEmail) {
       setAuthError('Please enter your email for recovery.');
       return;
     }
 
+    setAuthLoading(true);
     setAuthError('');
-    setAuthMessage('Recovery code requested. Check your email and continue to verification.');
-    setEmail(recoveryEmail);
-    setAuthMode('verify');
+    setAuthMessage('');
+
+    try {
+      await forgotPassword(recoveryEmail);
+      setAuthMessage('Recovery token sent. Check your email.');
+      setEmail(recoveryEmail);
+    } catch (error) {
+      setAuthError(error.message || 'Recovery request failed.');
+    } finally {
+      setAuthLoading(false);
+    }
   };
 
   const handleVerifyOtp = async () => {
@@ -366,21 +445,51 @@ function App() {
     setAuthMessage('');
 
     try {
-      await verifyOtp({ email, otp: verifyCode });
-      setAuthMessage('Verification successful. You can sign in now.');
+      const payload = await verifyOtp({ email, otp: verifyCode });
+      syncAuthState(normalizeAuthPayload(payload));
+      setAuthMessage('Verification successful. You are logged in.');
+      setActiveView('home');
       setAuthMode('signin');
-    } catch (_error) {
-      setAuthMessage('Frontend demo verification completed.');
-      setAuthMode('signin');
+    } catch (error) {
+      setAuthError(error.message || 'Verification failed.');
     } finally {
       setAuthLoading(false);
     }
   };
 
-  const handleLogout = () => {
-    setUser(null);
-    setAccessToken('');
-    setRefreshToken('');
+  const handleCheckout = async () => {
+    if (!accessToken) {
+      setUiMessage('Please login first.');
+      return;
+    }
+
+    if (cartItems.length === 0) {
+      setUiMessage('Your cart is empty.');
+      return;
+    }
+
+    try {
+      await withTokenRefresh((token) => createOrder(token));
+      setCartItems([]);
+      setUiMessage('Order placed successfully.');
+      setIsDrawerOpen(false);
+      setActiveView('home');
+    } catch (error) {
+      setUiMessage(error.message || 'Checkout failed.');
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      if (accessToken) {
+        await withTokenRefresh((token) => logoutUser(token));
+      }
+    } catch (_error) {
+      // Clear local state regardless of API result.
+    }
+
+    syncAuthState({ user: null, accessToken: '', refreshToken: '' });
+    setCartItems([]);
     setUiMessage('Logged out.');
   };
 
@@ -427,7 +536,7 @@ function App() {
                 <button
                   type="button"
                   className="icon-btn"
-                  onClick={() => openAuth(user ? 'signin' : 'signin')}
+                  onClick={() => openAuth(user ? 'account' : 'signin')}
                   aria-label="Profile"
                 >
                   <img src={profile} alt="Profile" />
@@ -532,11 +641,11 @@ function App() {
                       </div>
                       <span>{toCurrency(item.price)}</span>
                       <div className="qty-box">
-                        <button type="button" onClick={() => handleChangeQuantity(item._id, -1)}>
+                        <button type="button" onClick={() => handleRemoveFromCart(item._id)}>
                           -
                         </button>
                         <span>{item.quantity}</span>
-                        <button type="button" onClick={() => handleChangeQuantity(item._id, 1)}>
+                        <button type="button" onClick={() => handleIncreaseQuantity(item._id)}>
                           +
                         </button>
                       </div>
@@ -556,7 +665,7 @@ function App() {
                     <button type="button" onClick={() => setActiveView('home')}>
                       Shop More
                     </button>
-                    <button type="button">Check Out</button>
+                    <button type="button" onClick={handleCheckout}>Check Out</button>
                   </div>
                 </div>
               </main>
@@ -621,6 +730,16 @@ function App() {
                       Register
                     </button>
                   </div>
+                </article>
+              ) : null}
+
+              {authMode === 'account' ? (
+                <article className="auth-card">
+                  <h3>Account</h3>
+                  <p className="auth-hint">Signed in as {user?.email || 'Unknown user'}</p>
+                  <button type="button" onClick={handleLogout}>
+                    Logout
+                  </button>
                 </article>
               ) : null}
 
@@ -712,6 +831,7 @@ function App() {
               {authMode === 'verify' ? (
                 <article className="auth-card">
                   <h3>Verification</h3>
+                  <p className="auth-hint">Use the OTP sent to your email after registration.</p>
                   <label>
                     Email
                     <input
@@ -795,7 +915,7 @@ function App() {
           >
             View Cart
           </button>
-          <button type="button">Check Out</button>
+          <button type="button" onClick={handleCheckout}>Check Out</button>
         </div>
       </aside>
     </div>

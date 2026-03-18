@@ -1,13 +1,22 @@
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 const request = async (path, options = {}) => {
-  const response = await fetch(`${API_BASE}${path}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options.headers || {}),
-    },
-    ...options,
-  });
+  let response;
+  try {
+    response = await fetch(`${API_BASE}${path}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...(options.headers || {}),
+      },
+      ...options,
+    });
+  } catch (_error) {
+    const error = new Error(
+      `Cannot reach API at ${API_BASE}. Make sure backend is running on port 5000.`
+    );
+    error.status = 0;
+    throw error;
+  }
 
   let data = null;
   try {
@@ -56,6 +65,12 @@ export const refreshTokens = (refreshToken) =>
   request('/api/users/refresh-token', {
     method: 'POST',
     body: JSON.stringify({ refreshToken }),
+  });
+
+export const forgotPassword = (email) =>
+  request('/api/users/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
   });
 
 export const logoutUser = (token) =>
