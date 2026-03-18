@@ -18,10 +18,4 @@ Deadline: 6 May 2026
 3. Admins functions				
 3.1	Manage book status			
 3.2	Manage orders and users			
-3.3	Admin login dashboard	
-
-4. Subscription service & Membership status				
-4.1	Let users read a bundle full book without fulling paying			
-4.2	Will last for a month before renewing			
-4.3	Payment system for subscription plan			
-4.4	Early access to up and coming releases			
+3.3	Admin login dashboard			
