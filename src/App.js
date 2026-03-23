@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import CheckoutModal from './components/CheckoutModal';
 import './App.css';
 import profile from './profile.svg';
 import heart from './heart.svg';
@@ -14,6 +15,7 @@ import {
   logoutUser,
   refreshTokens,
   registerUser,
+  resetPassword,
   removeFromCart,
   verifyOtp,
 } from './api';
@@ -126,6 +128,7 @@ const normalizeAuthPayload = (payload) => ({
 });
 
 function App() {
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const initialAuth = readStoredAuth();
 
   const [activeView, setActiveView] = useState('home');
@@ -138,11 +141,13 @@ function App() {
   const [books, setBooks] = useState([]);
   const [booksLoading, setBooksLoading] = useState(true);
   const [booksError, setBooksError] = useState('');
+  const [usingMockCatalog, setUsingMockCatalog] = useState(false);
 
   const [cartItems, setCartItems] = useState([]);
 
   const [query, setQuery] = useState('');
   const [selectedGenre, setSelectedGenre] = useState('All');
+  const [selectedCategoryTab, setSelectedCategoryTab] = useState('All');
 
   const [authMode, setAuthMode] = useState('signin');
   const [name, setName] = useState('');
@@ -150,6 +155,9 @@ function App() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [recoveryEmail, setRecoveryEmail] = useState('');
+  const [resetToken, setResetToken] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [verifyCode, setVerifyCode] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -158,6 +166,8 @@ function App() {
   const [authError, setAuthError] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
   const [uiMessage, setUiMessage] = useState('');
+  const [uiMessageType, setUiMessageType] = useState('info');
+  const [addingBookId, setAddingBookId] = useState('');
 
   useEffect(() => {
     const loadBooks = async () => {
@@ -165,10 +175,12 @@ function App() {
       setBooksError('');
       try {
         const data = await getBooks();
-        const list = Array.isArray(data) && data.length > 0 ? data : MOCK_BOOKS;
+        const list = Array.isArray(data) ? data : [];
         setBooks(list);
+        setUsingMockCatalog(false);
       } catch (_error) {
         setBooks(MOCK_BOOKS);
+        setUsingMockCatalog(true);
         setBooksError('Using frontend mock catalog until backend is connected.');
       } finally {
         setBooksLoading(false);
@@ -176,6 +188,26 @@ function App() {
     };
 
     loadBooks();
+  }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const view = params.get('view');
+    const mode = params.get('mode');
+    const tokenFromLink = params.get('token') || '';
+    const emailFromLink = params.get('email') || '';
+
+    if (view === 'auth' && mode === 'reset' && tokenFromLink) {
+      setActiveView('auth');
+      setAuthMode('reset');
+      setResetToken(tokenFromLink);
+      if (emailFromLink) {
+        setEmail(emailFromLink);
+      }
+
+      const cleanUrl = `${window.location.pathname}`;
+      window.history.replaceState({}, '', cleanUrl);
+    }
   }, []);
 
   useEffect(() => {
@@ -196,6 +228,11 @@ function App() {
     setRefreshToken(nextRefresh);
   };
 
+  function showUiMessage(message, type = 'info') {
+    setUiMessage(message);
+    setUiMessageType(type);
+  }
+
   const withTokenRefresh = useCallback(async (callback) => {
     try {
       return await callback(accessToken);
@@ -204,12 +241,24 @@ function App() {
         throw error;
       }
 
-      const refreshed = await refreshTokens(refreshToken);
-      const nextAccess = refreshed.accessToken;
-      const nextRefresh = refreshed.refreshToken;
-      setAccessToken(nextAccess);
-      setRefreshToken(nextRefresh);
-      return callback(nextAccess);
+      try {
+        const refreshed = await refreshTokens(refreshToken);
+        const nextAccess = refreshed.accessToken;
+        const nextRefresh = refreshed.refreshToken;
+        setAccessToken(nextAccess);
+        setRefreshToken(nextRefresh);
+        return callback(nextAccess);
+      } catch (_refreshError) {
+        syncAuthState({ user: null, accessToken: '', refreshToken: '' });
+        setCartItems([]);
+        showUiMessage('Session expired. Please sign in again.', 'error');
+        setActiveView('auth');
+        setAuthMode('signin');
+
+        const expiredSessionError = new Error('Session expired. Please sign in again.');
+        expiredSessionError.status = 401;
+        throw expiredSessionError;
+      }
     }
   }, [accessToken, refreshToken]);
 
@@ -265,7 +314,7 @@ function App() {
   }, [user, accessToken, refreshToken, books, withTokenRefresh, refreshCartState]);
 
   const filteredBooks = useMemo(() => {
-    let working = books.length > 0 ? books : MOCK_BOOKS;
+    let working = usingMockCatalog ? MOCK_BOOKS : books;
 
     if (selectedGenre !== 'All') {
       working = working.filter((item) => (item.genre || 'Other') === selectedGenre);
@@ -281,12 +330,20 @@ function App() {
       const author = (item.author || '').toLowerCase();
       return title.includes(value) || author.includes(value);
     });
-  }, [books, query, selectedGenre]);
+  }, [books, query, selectedGenre, usingMockCatalog]);
 
   const trendingBook = filteredBooks[0] || MOCK_BOOKS[0];
   const topSellers = filteredBooks.slice(0, 4);
   const recommended =
     filteredBooks.slice(4, 8).length > 0 ? filteredBooks.slice(4, 8) : filteredBooks.slice(0, 4);
+  const categoryTabs = [
+    { label: 'All', genre: 'All' },
+    { label: 'Top Seller', genre: 'All' },
+    { label: 'Psychology', genre: 'Nonfiction' },
+    { label: 'Self-Help', genre: 'Nonfiction' },
+    { label: 'Finance', genre: 'Nonfiction' },
+    { label: 'History', genre: 'Nonfiction' },
+  ];
 
   const cartCount = useMemo(
     () => cartItems.reduce((sum, item) => sum + (item.quantity || 0), 0),
@@ -304,6 +361,18 @@ function App() {
     setUiMessage('');
   };
 
+  useEffect(() => {
+    if (!uiMessage || uiMessageType === 'loading') {
+      return;
+    }
+
+    const timeout = setTimeout(() => {
+      setUiMessage('');
+    }, 2400);
+
+    return () => clearTimeout(timeout);
+  }, [uiMessage, uiMessageType]);
+
   const openAuth = (mode = 'signin') => {
     clearStatus();
     setAuthMode(mode);
@@ -313,23 +382,33 @@ function App() {
 
   const handleAddToCart = async (bookId) => {
     if (!accessToken) {
-      setUiMessage('Please login from the profile icon to use cart.');
+      showUiMessage('Please login from the profile icon to use cart.', 'info');
       openAuth('signin');
+      return;
+    }
+
+    if (!bookId || String(bookId).startsWith('mock-')) {
+      showUiMessage('Backend catalog is empty. Add books to the database first.', 'error');
       return;
     }
 
     const item = (books.length > 0 ? books : MOCK_BOOKS).find((entry) => entry._id === bookId);
     if (!item) {
-      setUiMessage('Book is unavailable right now.');
+      showUiMessage('Book is unavailable right now.', 'error');
       return;
     }
+
+    setAddingBookId(bookId);
+    showUiMessage(`Adding ${item.title || 'book'} to cart...`, 'loading');
 
     try {
       await withTokenRefresh((token) => addToCart(token, bookId));
       await withTokenRefresh((token) => refreshCartState(token, books));
-      setUiMessage('Added to cart.');
+      showUiMessage('Added to cart.', 'success');
     } catch (error) {
-      setUiMessage(error.message || 'Could not add item to cart.');
+      showUiMessage(error.message || 'Could not add item to cart.', 'error');
+    } finally {
+      setAddingBookId('');
     }
   };
 
@@ -342,7 +421,7 @@ function App() {
       await withTokenRefresh((token) => removeFromCart(token, bookId));
       await withTokenRefresh((token) => refreshCartState(token, books));
     } catch (error) {
-      setUiMessage(error.message || 'Could not remove item from cart.');
+      showUiMessage(error.message || 'Could not remove item from cart.', 'error');
     }
   };
 
@@ -355,7 +434,7 @@ function App() {
       await withTokenRefresh((token) => addToCart(token, bookId));
       await withTokenRefresh((token) => refreshCartState(token, books));
     } catch (error) {
-      setUiMessage(error.message || 'Could not update quantity.');
+      showUiMessage(error.message || 'Could not update quantity.', 'error');
     }
   };
 
@@ -425,10 +504,45 @@ function App() {
 
     try {
       await forgotPassword(recoveryEmail);
-      setAuthMessage('Recovery token sent. Check your email.');
+      setAuthMessage('Reset link sent. Check your email.');
       setEmail(recoveryEmail);
     } catch (error) {
       setAuthError(error.message || 'Recovery request failed.');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!resetToken) {
+      setAuthError('Invalid or expired reset link. Please request a new one.');
+      return;
+    }
+
+    if (!newPassword || !confirmNewPassword) {
+      setAuthError('New password and confirm password are required.');
+      return;
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      setAuthError('New passwords do not match.');
+      return;
+    }
+
+    setAuthLoading(true);
+    setAuthError('');
+    setAuthMessage('');
+
+    try {
+      await resetPassword({ token: resetToken, newPassword });
+      setAuthMessage('Password reset successful. Please sign in.');
+      setAuthMode('signin');
+      setPassword('');
+      setNewPassword('');
+      setConfirmNewPassword('');
+      setResetToken('');
+    } catch (error) {
+      setAuthError(error.message || 'Reset password failed.');
     } finally {
       setAuthLoading(false);
     }
@@ -457,26 +571,47 @@ function App() {
     }
   };
 
-  const handleCheckout = async () => {
+  // Open checkout modal instead of direct checkout
+  const handleCheckout = () => {
     if (!accessToken) {
-      setUiMessage('Please login first.');
+      showUiMessage('Please login first.', 'info');
+      openAuth('signin');
       return;
+    }
+    if (cartItems.length === 0) {
+      showUiMessage('Your cart is empty.', 'info');
+      return;
+    }
+    setIsCheckoutOpen(true);
+    setIsDrawerOpen(false);
+  };
+
+  const handlePlaceOrder = async (checkoutForm) => {
+    if (!accessToken) {
+      throw new Error('Please login first.');
     }
 
     if (cartItems.length === 0) {
-      setUiMessage('Your cart is empty.');
-      return;
+      throw new Error('Your cart is empty.');
     }
 
-    try {
-      await withTokenRefresh((token) => createOrder(token));
-      setCartItems([]);
-      setUiMessage('Order placed successfully.');
-      setIsDrawerOpen(false);
-      setActiveView('home');
-    } catch (error) {
-      setUiMessage(error.message || 'Checkout failed.');
-    }
+    const payload = {
+      shippingInfo: {
+        name: checkoutForm?.name || user?.name || '',
+        email: checkoutForm?.email || user?.email || '',
+        phone: checkoutForm?.phone || '',
+        address: checkoutForm?.address || '',
+        city: checkoutForm?.city || '',
+        zip: checkoutForm?.zip || '',
+        country: checkoutForm?.country || '',
+      },
+      paymentMethod: checkoutForm?.payment || 'card',
+    };
+
+    await withTokenRefresh((token) => createOrder(token, payload));
+    await withTokenRefresh((token) => refreshCartState(token, books));
+    showUiMessage('Order placed successfully.', 'success');
+    setIsCheckoutOpen(false);
   };
 
   const handleLogout = async () => {
@@ -490,18 +625,26 @@ function App() {
 
     syncAuthState({ user: null, accessToken: '', refreshToken: '' });
     setCartItems([]);
-    setUiMessage('Logged out.');
+    showUiMessage('Logged out.', 'info');
   };
 
   const renderBookCard = (item) => (
     <article key={item._id} className="book-card">
       <img src={item.image || bookCover} alt={item.title || 'Book'} />
-      <h3>{item.title || 'Untitled'}</h3>
-      <p>{item.author || 'Unknown author'}</p>
-      <h4>{toCurrency(item.price)}</h4>
-      <button type="button" onClick={() => handleAddToCart(item._id)}>
-        Add to Cart
-      </button>
+      <div className="book-meta">
+        <h3>{item.title || 'Untitled'}</h3>
+        <p>{item.author || 'Unknown author'}</p>
+        <div className="book-row">
+          <h4>{toCurrency(item.price)}</h4>
+          <button
+            type="button"
+            onClick={() => handleAddToCart(item._id)}
+            disabled={addingBookId === item._id}
+          >
+            {addingBookId === item._id ? 'Adding...' : 'Add to Cart'}
+          </button>
+        </div>
+      </div>
     </article>
   );
 
@@ -557,44 +700,55 @@ function App() {
             </header>
 
             {activeView === 'home' ? (
-              <main className="home-view">
+              <main className="home-view fade-in-anim">
                 <section className="hero-panel">
-                  <img src={trendingBook?.image || bookCover} alt={trendingBook?.title || 'Featured book'} />
-                  <div className="hero-content">
+                  <img className="hero-img-anim" src={trendingBook?.image || bookCover} alt={trendingBook?.title || 'Featured book'} />
+                  <div className="hero-content slide-in-anim">
+                    <span className="featured-badge">Featured Book</span>
                     <h2>{trendingBook?.title || 'Book Spotlight'}</h2>
-                    <p>{trendingBook?.author || 'Unknown author'}</p>
+                    <p className="hero-author">by {trendingBook?.author || 'Unknown author'}</p>
                     <p>{trendingBook?.description || 'Curated title for today.'}</p>
-                    <button type="button" onClick={() => handleAddToCart(trendingBook?._id)}>
-                      Add to cart
-                    </button>
+                    <div className="hero-actions">
+                      <strong>{toCurrency(trendingBook?.price)}</strong>
+                      <button
+                        className="animated-btn"
+                        type="button"
+                        onClick={() => handleAddToCart(trendingBook?._id)}
+                        disabled={addingBookId === trendingBook?._id}
+                      >
+                        {addingBookId === trendingBook?._id ? 'Adding...' : 'Add to Cart'}
+                      </button>
+                    </div>
                   </div>
+                </section>
+
+                <section className="category-row" aria-label="Book categories">
+                  {categoryTabs.map((tab) => (
+                    <button
+                      key={tab.label}
+                      type="button"
+                      className={`category-pill ${selectedCategoryTab === tab.label ? 'active' : ''}`}
+                      onClick={() => {
+                        setSelectedCategoryTab(tab.label);
+                        setSelectedGenre(tab.genre);
+                      }}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
                 </section>
 
                 <section className="books-section">
                   <div className="section-title-row">
                     <h3>Top Seller</h3>
-                    <div className="genre-picker">
-                      <select
-                        value={selectedGenre}
-                        onChange={(event) => setSelectedGenre(event.target.value)}
-                        aria-label="Choose genre"
-                      >
-                        <option value="All">choose genre</option>
-                        <option value="Adventure">Adventure</option>
-                        <option value="Romance">Romance</option>
-                        <option value="Sci-Fi">Sci-Fi</option>
-                        <option value="Fantasy">Fantasy</option>
-                        <option value="Horror">Horror</option>
-                        <option value="Thriller">Thriller</option>
-                        <option value="Mystery">Mystery</option>
-                        <option value="Nonfiction">Nonfiction</option>
-                      </select>
-                    </div>
                   </div>
 
-                  <div className="books-grid">
+                  <div className="books-grid fade-in-anim">
                     {booksLoading ? <p className="section-note">Loading books...</p> : null}
                     {booksError ? <p className="section-note warning">{booksError}</p> : null}
+                    {!booksLoading && !usingMockCatalog && books.length === 0 ? (
+                      <p className="section-note warning">No books in backend yet. Create books first to enable Add to Cart.</p>
+                    ) : null}
                     {!booksLoading && topSellers.length === 0 ? (
                       <p className="section-note">No books found for this filter.</p>
                     ) : null}
@@ -606,12 +760,17 @@ function App() {
                   <div className="section-title-row">
                     <h3>Recommended For You</h3>
                   </div>
-                  <div className="books-grid">
+                  <div className="books-grid fade-in-anim">
                     {!booksLoading ? recommended.map(renderBookCard) : null}
                   </div>
                 </section>
 
-                {uiMessage ? <p className="floating-message">{uiMessage}</p> : null}
+                {uiMessage ? (
+                  <div className={`floating-message ${uiMessageType}`} role="status" aria-live="polite">
+                    <span className="toast-indicator" aria-hidden="true" />
+                    <span>{uiMessage}</span>
+                  </div>
+                ) : null}
               </main>
             ) : null}
 
@@ -671,14 +830,6 @@ function App() {
               </main>
             ) : null}
 
-            <button
-              type="button"
-              className="fab-cart"
-              onClick={() => setIsDrawerOpen(true)}
-              aria-label="Open cart drawer"
-            >
-              Cart ({cartCount})
-            </button>
           </>
         ) : (
           <main className="auth-view">
@@ -807,6 +958,7 @@ function App() {
               {authMode === 'recovery' ? (
                 <article className="auth-card">
                   <h3>Recovery</h3>
+                  <p className="auth-hint">We will email a reset link to this address.</p>
                   <label>
                     Email
                     <input
@@ -821,6 +973,58 @@ function App() {
                   </button>
                   <div className="switch-auth-row">
                     <span>Remember your password ?</span>
+                    <button type="button" className="inline-link" onClick={() => setAuthMode('signin')}>
+                      Sign In
+                    </button>
+                  </div>
+                </article>
+              ) : null}
+
+              {authMode === 'reset' ? (
+                <article className="auth-card">
+                  <h3>Reset Password</h3>
+                  <p className="auth-hint">Set your new password below.</p>
+                  <label>
+                    New Password
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="Enter new password"
+                      value={newPassword}
+                      onChange={(event) => setNewPassword(event.target.value)}
+                    />
+                  </label>
+                  <label>
+                    Confirm New Password
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      placeholder="Confirm new password"
+                      value={confirmNewPassword}
+                      onChange={(event) => setConfirmNewPassword(event.target.value)}
+                    />
+                  </label>
+                  <div className="toggle-row">
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={showPassword}
+                        onChange={(event) => setShowPassword(event.target.checked)}
+                      />
+                      Show new password
+                    </label>
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={showConfirmPassword}
+                        onChange={(event) => setShowConfirmPassword(event.target.checked)}
+                      />
+                      Show confirm password
+                    </label>
+                  </div>
+                  <button type="button" onClick={handleResetPassword} disabled={authLoading}>
+                    Reset Password
+                  </button>
+                  <div className="switch-auth-row">
+                    <span>Back to login</span>
                     <button type="button" className="inline-link" onClick={() => setAuthMode('signin')}>
                       Sign In
                     </button>
@@ -918,7 +1122,15 @@ function App() {
           <button type="button" onClick={handleCheckout}>Check Out</button>
         </div>
       </aside>
-    </div>
+    <CheckoutModal
+      isOpen={isCheckoutOpen}
+      onClose={() => setIsCheckoutOpen(false)}
+      cartItems={cartItems}
+      cartTotal={cartTotal}
+      user={user}
+      onPlaceOrder={handlePlaceOrder}
+    />
+  </div>
   );
 }
 

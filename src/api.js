@@ -1,14 +1,16 @@
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
 const request = async (path, options = {}) => {
+  const { headers: customHeaders = {}, ...restOptions } = options;
+
   let response;
   try {
     response = await fetch(`${API_BASE}${path}`, {
+      ...restOptions,
       headers: {
         'Content-Type': 'application/json',
-        ...(options.headers || {}),
+        ...customHeaders,
       },
-      ...options,
     });
   } catch (_error) {
     const error = new Error(
@@ -73,6 +75,12 @@ export const forgotPassword = (email) =>
     body: JSON.stringify({ email }),
   });
 
+export const resetPassword = (payload) =>
+  request('/api/users/reset-password', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+
 export const logoutUser = (token) =>
   request('/api/users/logout', {
     method: 'POST',
@@ -97,8 +105,9 @@ export const removeFromCart = (token, bookId) =>
     ...withAuth(token),
   });
 
-export const createOrder = (token) =>
+export const createOrder = (token, payload) =>
   request('/api/orders', {
     method: 'POST',
     ...withAuth(token),
+    body: JSON.stringify(payload || {}),
   });
