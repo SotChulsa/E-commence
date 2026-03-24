@@ -7,6 +7,7 @@ import cart from './cart.svg';
 import bookCover from './new-book.svg';
 import {
   addToCart,
+  createAbaPurchase,
   createOrder,
   forgotPassword,
   getBooks,
@@ -17,6 +18,7 @@ import {
   registerUser,
   resetPassword,
   removeFromCart,
+  updateBookPrice,
   verifyOtp,
 } from './api';
 
@@ -168,6 +170,8 @@ function App() {
   const [uiMessage, setUiMessage] = useState('');
   const [uiMessageType, setUiMessageType] = useState('info');
   const [addingBookId, setAddingBookId] = useState('');
+  const [priceDrafts, setPriceDrafts] = useState({});
+  const [updatingPriceBookId, setUpdatingPriceBookId] = useState('');
 
   useEffect(() => {
     const loadBooks = async () => {
@@ -332,6 +336,18 @@ function App() {
     });
   }, [books, query, selectedGenre, usingMockCatalog]);
 
+  useEffect(() => {
+    setPriceDrafts((current) => {
+      const next = { ...current };
+      books.forEach((book) => {
+        if (next[book._id] === undefined) {
+          next[book._id] = String(book.price ?? '');
+        }
+      });
+      return next;
+    });
+  }, [books]);
+
   const trendingBook = filteredBooks[0] || MOCK_BOOKS[0];
   const topSellers = filteredBooks.slice(0, 4);
   const recommended =
@@ -435,6 +451,46 @@ function App() {
       await withTokenRefresh((token) => refreshCartState(token, books));
     } catch (error) {
       showUiMessage(error.message || 'Could not update quantity.', 'error');
+    }
+  };
+
+  const handleUpdateBookPrice = async (bookId) => {
+    if (user?.role !== 'admin') {
+      showUiMessage('Only admin can update book price.', 'error');
+      return;
+    }
+
+    if (!accessToken) {
+      showUiMessage('Please sign in first.', 'info');
+      openAuth('signin');
+      return;
+    }
+
+    const draft = priceDrafts[bookId];
+    const parsed = Number(draft);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      showUiMessage('Please enter a valid price.', 'error');
+      return;
+    }
+
+    setUpdatingPriceBookId(bookId);
+    showUiMessage('Updating price...', 'loading');
+
+    try {
+      const updatedBook = await withTokenRefresh((token) => updateBookPrice(token, bookId, parsed));
+
+      setBooks((current) =>
+        current.map((book) => (book._id === updatedBook._id ? { ...book, price: updatedBook.price } : book))
+      );
+      setCartItems((current) =>
+        current.map((item) => (item._id === updatedBook._id ? { ...item, price: updatedBook.price } : item))
+      );
+      setPriceDrafts((current) => ({ ...current, [bookId]: String(updatedBook.price) }));
+      showUiMessage('Price updated successfully.', 'success');
+    } catch (error) {
+      showUiMessage(error.message || 'Could not update price.', 'error');
+    } finally {
+      setUpdatingPriceBookId('');
     }
   };
 
@@ -606,12 +662,33 @@ function App() {
         country: checkoutForm?.country || '',
       },
       paymentMethod: checkoutForm?.payment || 'card',
+      paymentReference: checkoutForm?.paymentReference || '',
     };
 
-    await withTokenRefresh((token) => createOrder(token, payload));
+    const createdOrder = await withTokenRefresh((token) => createOrder(token, payload));
     await withTokenRefresh((token) => refreshCartState(token, books));
     showUiMessage('Order placed successfully.', 'success');
-    setIsCheckoutOpen(false);
+    return createdOrder;
+  };
+
+  const handleCreateAbaPurchase = async ({ shippingInfo, amount }) => {
+    if (!accessToken) {
+      throw new Error('Please login first.');
+    }
+
+    const items = cartItems.map((item) => ({
+      name: item.title,
+      quantity: item.quantity || 1,
+      price: Number(item.price || 0).toFixed(2),
+    }));
+
+    return withTokenRefresh((token) =>
+      createAbaPurchase(token, {
+        amount,
+        shippingInfo,
+        items,
+      })
+    );
   };
 
   const handleLogout = async () => {
@@ -644,6 +721,30 @@ function App() {
             {addingBookId === item._id ? 'Adding...' : 'Add to Cart'}
           </button>
         </div>
+        {user?.role === 'admin' ? (
+          <div className="admin-price-editor">
+            <label htmlFor={`price-${item._id}`}>Edit Price</label>
+            <div className="admin-price-row">
+              <input
+                id={`price-${item._id}`}
+                type="number"
+                step="0.01"
+                min="0"
+                value={priceDrafts[item._id] ?? ''}
+                onChange={(event) =>
+                  setPriceDrafts((current) => ({ ...current, [item._id]: event.target.value }))
+                }
+              />
+              <button
+                type="button"
+                onClick={() => handleUpdateBookPrice(item._id)}
+                disabled={updatingPriceBookId === item._id}
+              >
+                {updatingPriceBookId === item._id ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+          </div>
+        ) : null}
       </div>
     </article>
   );
@@ -958,7 +1059,6 @@ function App() {
               {authMode === 'recovery' ? (
                 <article className="auth-card">
                   <h3>Recovery</h3>
-                  <p className="auth-hint">We will email a reset link to this address.</p>
                   <label>
                     Email
                     <input
@@ -1129,6 +1229,7 @@ function App() {
       cartTotal={cartTotal}
       user={user}
       onPlaceOrder={handlePlaceOrder}
+      onCreateAbaPurchase={handleCreateAbaPurchase}
     />
   </div>
   );

@@ -411,6 +411,44 @@ select {
   cursor: not-allowed;
 }
 
+.admin-price-editor {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed #d8d9e1;
+  display: grid;
+  gap: 6px;
+}
+
+.admin-price-editor label {
+  font-size: 12px;
+  color: #5a5d66;
+}
+
+.admin-price-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
+.admin-price-row input {
+  width: 100%;
+  border: 1px solid #cfd2dc;
+  border-radius: 8px;
+  padding: 6px 8px;
+  background: #fff;
+  color: #1f222b;
+}
+
+.admin-price-row button {
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: none;
+  background: #0e0f12;
+  color: #fff;
+  cursor: pointer;
+  min-width: 64px;
+}
+
 .floating-message {
   position: fixed;
   right: 22px;

@@ -111,3 +111,17 @@ export const createOrder = (token, payload) =>
     ...withAuth(token),
     body: JSON.stringify(payload || {}),
   });
+
+export const updateBookPrice = (token, bookId, price) =>
+  request(`/api/books/${bookId}/price`, {
+    method: 'PATCH',
+    ...withAuth(token),
+    body: JSON.stringify({ price }),
+  });
+
+export const createAbaPurchase = (token, payload) =>
+  request('/api/payments/aba/purchase', {
+    method: 'POST',
+    ...withAuth(token),
+    body: JSON.stringify(payload || {}),
+  });
