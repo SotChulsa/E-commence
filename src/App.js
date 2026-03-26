@@ -81,6 +81,40 @@ const MOCK_BOOKS = [
   },
 ];
 
+const FEATURED_TITLES = [
+  'Deep Work',
+  'Atomic Habits',
+  'Sapiens',
+  'Dune',
+];
+
+const FEATURED_FALLBACKS = {
+  'deep work': {
+    author: 'Cal Newport',
+    description: 'Rules for focused success in a distracted world, with practical deep-focus strategies.',
+    price: 19.99,
+    image: '',
+  },
+  'atomic habits': {
+    author: 'James Clear',
+    description: 'Build better systems, break bad habits, and improve every day through small changes.',
+    price: 18.0,
+    image: '',
+  },
+  sapiens: {
+    author: 'Yuval Noah Harari',
+    description: 'A brief history of humankind, from cognitive revolution to modern civilization.',
+    price: 20.0,
+    image: '',
+  },
+  dune: {
+    author: 'Frank Herbert',
+    description: 'An epic science fiction saga of politics, prophecy, survival, and power on Arrakis.',
+    price: 22.0,
+    image: '',
+  },
+};
+
 const toCurrency = (value) => {
   if (typeof value !== 'number') {
     return 'Price unavailable';
@@ -172,6 +206,9 @@ function App() {
   const [addingBookId, setAddingBookId] = useState('');
   const [priceDrafts, setPriceDrafts] = useState({});
   const [updatingPriceBookId, setUpdatingPriceBookId] = useState('');
+  const [featuredIndex, setFeaturedIndex] = useState(0);
+  const [selectedBook, setSelectedBook] = useState(null);
+  const [wishlistBookIds, setWishlistBookIds] = useState([]);
 
   useEffect(() => {
     const loadBooks = async () => {
@@ -348,10 +385,65 @@ function App() {
     });
   }, [books]);
 
-  const trendingBook = filteredBooks[0] || MOCK_BOOKS[0];
+  const featuredBooks = useMemo(() => {
+    const catalog = usingMockCatalog || books.length === 0 ? MOCK_BOOKS : books;
+
+    return FEATURED_TITLES.map((title, index) => {
+      const lowerTitle = title.toLowerCase();
+      const matched = catalog.find((book) => (book.title || '').toLowerCase() === lowerTitle);
+      const fallback = FEATURED_FALLBACKS[lowerTitle] || {};
+
+      if (matched) {
+        return {
+          ...matched,
+          image: matched.image || fallback.image || '',
+          description: matched.description || fallback.description || 'Curated title for today.',
+          author: matched.author || fallback.author || 'Featured author',
+        };
+      }
+
+      return {
+        _id: fallback?._id || `featured-fallback-${index}`,
+        title,
+        author: fallback.author || 'Featured author',
+        description: fallback.description || 'Curated title for today.',
+        price: typeof fallback.price === 'number' ? fallback.price : 19.99,
+        image: fallback.image || '',
+      };
+    });
+  }, [books, usingMockCatalog]);
+
+  useEffect(() => {
+    if (featuredBooks.length === 0) {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setFeaturedIndex((current) => (current + 1) % featuredBooks.length);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [featuredBooks]);
+
+  useEffect(() => {
+    if (featuredIndex < featuredBooks.length) {
+      return;
+    }
+
+    setFeaturedIndex(0);
+  }, [featuredBooks, featuredIndex]);
+
+  const trendingBook = featuredBooks[featuredIndex] || filteredBooks[0] || MOCK_BOOKS[0];
   const topSellers = filteredBooks.slice(0, 4);
   const recommended =
     filteredBooks.slice(4, 8).length > 0 ? filteredBooks.slice(4, 8) : filteredBooks.slice(0, 4);
+  const activeDetailBook = selectedBook || trendingBook;
+  const detailRecommendations = useMemo(() => {
+    const catalog = filteredBooks.length > 0 ? filteredBooks : books;
+    return catalog
+      .filter((book) => book._id !== activeDetailBook?._id)
+      .slice(0, 3);
+  }, [filteredBooks, books, activeDetailBook]);
   const categoryTabs = [
     { label: 'All', genre: 'All' },
     { label: 'Top Seller', genre: 'All' },
@@ -493,6 +585,33 @@ function App() {
       setUpdatingPriceBookId('');
     }
   };
+
+  const openBookDetail = useCallback((book) => {
+    if (!book) {
+      return;
+    }
+
+    setSelectedBook(book);
+    setActiveView('book-detail');
+    setIsDrawerOpen(false);
+  }, []);
+
+  const toggleWishlist = useCallback((bookId) => {
+    if (!bookId) {
+      return;
+    }
+
+    setWishlistBookIds((current) => {
+      const exists = current.includes(bookId);
+      if (exists) {
+        showUiMessage('Removed from wishlist.', 'info');
+        return current.filter((id) => id !== bookId);
+      }
+
+      showUiMessage('Added to wishlist.', 'success');
+      return [...current, bookId];
+    });
+  }, []);
 
   const handleSignIn = async () => {
     if (!email || !password) {
@@ -706,23 +825,56 @@ function App() {
   };
 
   const renderBookCard = (item) => (
-    <article key={item._id} className="book-card">
+    <article
+      key={item._id}
+      className="book-card clickable"
+      role="button"
+      tabIndex={0}
+      onClick={() => openBookDetail(item)}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          openBookDetail(item);
+        }
+      }}
+      aria-label={`Open details for ${item.title || 'book'}`}
+    >
       <img src={item.image || bookCover} alt={item.title || 'Book'} />
       <div className="book-meta">
         <h3>{item.title || 'Untitled'}</h3>
         <p>{item.author || 'Unknown author'}</p>
         <div className="book-row">
           <h4>{toCurrency(item.price)}</h4>
-          <button
-            type="button"
-            onClick={() => handleAddToCart(item._id)}
-            disabled={addingBookId === item._id}
-          >
-            {addingBookId === item._id ? 'Adding...' : 'Add to Cart'}
-          </button>
+          <div className="book-row-actions">
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                handleAddToCart(item._id);
+              }}
+              disabled={addingBookId === item._id}
+            >
+              {addingBookId === item._id ? 'Adding...' : 'Add to Cart'}
+            </button>
+            <button
+              type="button"
+              className={`book-wishlist-btn ${wishlistBookIds.includes(item._id) ? 'active' : ''}`}
+              aria-label={wishlistBookIds.includes(item._id) ? 'Remove from wishlist' : 'Add to wishlist'}
+              onClick={(event) => {
+                event.stopPropagation();
+                toggleWishlist(item._id);
+              }}
+            >
+              <span className="heart-glyph" aria-hidden="true">♡</span>
+            </button>
+          </div>
         </div>
         {user?.role === 'admin' ? (
-          <div className="admin-price-editor">
+          <div
+            className="admin-price-editor"
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => event.stopPropagation()}
+          >
             <label htmlFor={`price-${item._id}`}>Edit Price</label>
             <div className="admin-price-row">
               <input
@@ -787,6 +939,7 @@ function App() {
                 </button>
                 <button type="button" className="icon-btn" aria-label="Wishlist">
                   <img src={heart} alt="Wishlist" />
+                  <span>Wishlist ({wishlistBookIds.length})</span>
                 </button>
                 <button
                   type="button"
@@ -802,23 +955,77 @@ function App() {
 
             {activeView === 'home' ? (
               <main className="home-view fade-in-anim">
-                <section className="hero-panel">
-                  <img className="hero-img-anim" src={trendingBook?.image || bookCover} alt={trendingBook?.title || 'Featured book'} />
-                  <div className="hero-content slide-in-anim">
-                    <span className="featured-badge">Featured Book</span>
-                    <h2>{trendingBook?.title || 'Book Spotlight'}</h2>
-                    <p className="hero-author">by {trendingBook?.author || 'Unknown author'}</p>
-                    <p>{trendingBook?.description || 'Curated title for today.'}</p>
-                    <div className="hero-actions">
+                <section
+                  className="hero-panel clickable"
+                  onClick={() => openBookDetail(trendingBook)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      openBookDetail(trendingBook);
+                    }
+                  }}
+                  aria-label={`Open details for ${trendingBook?.title || 'featured book'}`}
+                >
+                  {trendingBook?.image ? (
+                    <img
+                      key={`hero-image-${trendingBook?._id || featuredIndex}`}
+                      className="hero-img-anim"
+                      src={trendingBook.image}
+                      alt={trendingBook?.title || 'Featured book'}
+                    />
+                  ) : (
+                    <div className="hero-image-placeholder" aria-hidden="true" />
+                  )}
+                  <div key={`hero-content-${trendingBook?._id || featuredIndex}`} className="hero-content">
+                    <span className="featured-badge hero-stagger hero-stagger-0">Featured Book</span>
+                    <h2 className="hero-stagger hero-stagger-1">{trendingBook?.title || 'Book Spotlight'}</h2>
+                    <p className="hero-author hero-stagger hero-stagger-2">by {trendingBook?.author || 'Unknown author'}</p>
+                    <p className="hero-stagger hero-stagger-3">{trendingBook?.description || 'Curated title for today.'}</p>
+                    <div className="hero-actions hero-stagger hero-stagger-4">
                       <strong>{toCurrency(trendingBook?.price)}</strong>
                       <button
-                        className="animated-btn"
+                        className="animated-btn hero-cart-btn"
                         type="button"
-                        onClick={() => handleAddToCart(trendingBook?._id)}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleAddToCart(trendingBook?._id);
+                        }}
                         disabled={addingBookId === trendingBook?._id}
                       >
                         {addingBookId === trendingBook?._id ? 'Adding...' : 'Add to Cart'}
                       </button>
+                      <button
+                        className={`wishlist-btn ${wishlistBookIds.includes(trendingBook?._id) ? 'active' : ''}`}
+                        type="button"
+                        aria-label={wishlistBookIds.includes(trendingBook?._id) ? 'Remove from wishlist' : 'Add to wishlist'}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          toggleWishlist(trendingBook?._id);
+                        }}
+                      >
+                        <span className="heart-glyph" aria-hidden="true">♡</span>
+                      </button>
+                    </div>
+                    <div className="hero-dots" role="tablist" aria-label="Featured book navigation">
+                      {featuredBooks.map((book, index) => {
+                        const isActive = index === featuredIndex;
+                        return (
+                          <button
+                            key={book._id || `${book.title}-${index}`}
+                            type="button"
+                            role="tab"
+                            className={`hero-dot ${isActive ? 'active' : ''}`}
+                            aria-selected={isActive}
+                            aria-label={`Show ${book.title || 'featured book'}`}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setFeaturedIndex(index);
+                            }}
+                          />
+                        );
+                      })}
                     </div>
                   </div>
                 </section>
@@ -928,6 +1135,128 @@ function App() {
                     <button type="button" onClick={handleCheckout}>Check Out</button>
                   </div>
                 </div>
+              </main>
+            ) : null}
+
+            {activeView === 'book-detail' ? (
+              <main className="book-detail-view">
+                <button
+                  type="button"
+                  className="back-home-link"
+                  onClick={() => setActiveView('home')}
+                >
+                  Back to home
+                </button>
+                <section className="book-detail-card">
+                  <img src={activeDetailBook?.image || bookCover} alt={activeDetailBook?.title || 'Book'} />
+                  <div className="book-detail-content">
+                    <span className="featured-badge">{activeDetailBook?.genre || 'Featured'}</span>
+                    <h2>{activeDetailBook?.title || 'Untitled'}</h2>
+                    <p className="hero-author">by {activeDetailBook?.author || 'Unknown author'}</p>
+                    <p className="book-detail-rating">Rating 4.8 out of 5</p>
+                    <div className="book-detail-divider" />
+                    <h4>Description</h4>
+                    <p>{activeDetailBook?.description || 'No description available yet.'}</p>
+                    <div className="book-detail-divider" />
+                    <div className="book-detail-price-row">
+                      <p className="book-detail-price">{toCurrency(activeDetailBook?.price)}</p>
+                      <p className="book-detail-compare">{toCurrency((activeDetailBook?.price || 0) * 1.35)}</p>
+                    </div>
+                    <div className="book-detail-actions">
+                      <button
+                        type="button"
+                        onClick={() => handleAddToCart(activeDetailBook?._id)}
+                        disabled={addingBookId === activeDetailBook?._id}
+                      >
+                        {addingBookId === activeDetailBook?._id ? 'Adding...' : 'Add to Cart'}
+                      </button>
+                      <button
+                        type="button"
+                        className={`wishlist-btn ${wishlistBookIds.includes(activeDetailBook?._id) ? 'active' : ''}`}
+                        onClick={() => toggleWishlist(activeDetailBook?._id)}
+                        aria-label={wishlistBookIds.includes(activeDetailBook?._id) ? 'Remove from wishlist' : 'Add to wishlist'}
+                      >
+                        <span className="heart-glyph" aria-hidden="true">♡</span>
+                      </button>
+                    </div>
+
+                    <div className="book-detail-benefits">
+                      <article>
+                        <strong>In Stock</strong>
+                        <p>Ships immediately</p>
+                      </article>
+                      <article>
+                        <strong>Free Shipping</strong>
+                        <p>Orders over $50</p>
+                      </article>
+                      <article>
+                        <strong>Easy Returns</strong>
+                        <p>30-day return policy</p>
+                      </article>
+                    </div>
+
+                    <section className="book-detail-facts">
+                      <h4>Product Details</h4>
+                      <div className="facts-grid">
+                        <p>Format:</p><p>Hardcover</p>
+                        <p>Publisher:</p><p>Digipaper Publishing</p>
+                        <p>Language:</p><p>English</p>
+                        <p>ISBN:</p><p>978-9278091382</p>
+                      </div>
+                    </section>
+                  </div>
+                </section>
+
+                <section className="book-detail-more">
+                  <h3>Want more?</h3>
+                  <p>Check out these other amazing books</p>
+                  <div className="book-detail-reco-grid">
+                    {detailRecommendations.map((item) => (
+                      <article
+                        key={item._id}
+                        className="book-detail-reco-card"
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => openBookDetail(item)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            openBookDetail(item);
+                          }
+                        }}
+                      >
+                        <button
+                          type="button"
+                          className={`book-detail-reco-heart ${wishlistBookIds.includes(item._id) ? 'active' : ''}`}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            toggleWishlist(item._id);
+                          }}
+                          aria-label={wishlistBookIds.includes(item._id) ? 'Remove from wishlist' : 'Add to wishlist'}
+                        >
+                          <span className="heart-glyph" aria-hidden="true">♡</span>
+                        </button>
+                        <img src={item.image || bookCover} alt={item.title || 'Book'} />
+                        <div className="book-detail-reco-meta">
+                          <h4>{item.title || 'Untitled'}</h4>
+                          <p>{item.author || 'Unknown author'}</p>
+                          <div>
+                            <span>{toCurrency(item.price)}</span>
+                            <button
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleAddToCart(item._id);
+                              }}
+                            >
+                              Add to Cart
+                            </button>
+                          </div>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                </section>
               </main>
             ) : null}
 
