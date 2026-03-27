@@ -488,6 +488,16 @@ function App() {
     setIsDrawerOpen(false);
   };
 
+  const openProfileView = () => {
+    if (!user) {
+      openAuth('signin');
+      return;
+    }
+
+    setActiveView('profile');
+    setIsDrawerOpen(false);
+  };
+
   const handleAddToCart = async (bookId) => {
     if (!accessToken) {
       showUiMessage('Please login from the profile icon to use cart.', 'info');
@@ -821,6 +831,7 @@ function App() {
 
     syncAuthState({ user: null, accessToken: '', refreshToken: '' });
     setCartItems([]);
+    setActiveView('home');
     showUiMessage('Logged out.', 'info');
   };
 
@@ -932,7 +943,7 @@ function App() {
                 <button
                   type="button"
                   className="icon-btn"
-                  onClick={() => openAuth(user ? 'account' : 'signin')}
+                  onClick={openProfileView}
                   aria-label="Profile"
                 >
                   <img src={profile} alt="Profile" />
@@ -1135,6 +1146,52 @@ function App() {
                     <button type="button" onClick={handleCheckout}>Check Out</button>
                   </div>
                 </div>
+              </main>
+            ) : null}
+
+            {activeView === 'profile' ? (
+              <main className="profile-view">
+                <button
+                  type="button"
+                  className="back-home-link"
+                  onClick={() => setActiveView('home')}
+                >
+                  Back to home
+                </button>
+
+                <section className="profile-card">
+                  <h2>Your Profile</h2>
+                  <p className="profile-subtitle">Manage your account details and shopping activity.</p>
+
+                  <div className="profile-grid">
+                    <article>
+                      <h4>Name</h4>
+                      <p>{user?.name || 'Guest User'}</p>
+                    </article>
+                    <article>
+                      <h4>Email</h4>
+                      <p>{user?.email || 'No email available'}</p>
+                    </article>
+                    <article>
+                      <h4>Role</h4>
+                      <p>{user?.role || 'customer'}</p>
+                    </article>
+                    <article>
+                      <h4>Cart Items</h4>
+                      <p>{cartCount}</p>
+                    </article>
+                    <article>
+                      <h4>Wishlist</h4>
+                      <p>{wishlistBookIds.length}</p>
+                    </article>
+                  </div>
+
+                  <div className="profile-actions">
+                    <button type="button" onClick={() => setActiveView('home')}>Continue Shopping</button>
+                    <button type="button" onClick={() => setActiveView('cart-page')}>View Cart</button>
+                    <button type="button" onClick={handleLogout}>Logout</button>
+                  </div>
+                </section>
               </main>
             ) : null}
 
