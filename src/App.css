@@ -619,6 +619,45 @@ select {
   min-width: 64px;
 }
 
+.admin-nav-btn {
+  min-width: 108px;
+  justify-content: center;
+}
+
+.admin-dashboard-view {
+  display: grid;
+  gap: 16px;
+  padding-bottom: 20px;
+}
+
+.admin-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.admin-stat-card {
+  background: #f7f8fb;
+  border: 1px solid #d9dce7;
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 8px 16px rgba(19, 21, 26, 0.08);
+}
+
+.admin-stat-card h4 {
+  margin: 0;
+  font-size: 14px;
+  color: #515565;
+  font-weight: 600;
+}
+
+.admin-stat-card p {
+  margin: 10px 0 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: #11131a;
+}
+
 .floating-message {
   position: fixed;
   right: 22px;
@@ -809,18 +848,206 @@ select {
   align-content: start;
 }
 
-.profile-card {
-  border: 1px solid #d7dae4;
-  border-radius: 16px;
-  background: linear-gradient(150deg, #f9f9fb 0%, #f0f1f5 100%);
-  padding: 22px;
-  display: grid;
-  gap: 14px;
+.profile-layout {
+  grid-template-columns: minmax(220px, 260px) minmax(0, 1fr);
+  align-items: start;
 }
 
-.profile-card h2 {
+.profile-sidebar-card {
+  border: 1px solid #d7dae4;
+  border-radius: 16px;
+  background: #f4f5f8;
+  padding: 20px;
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+}
+
+.profile-avatar-wrap {
+  position: relative;
+  width: 96px;
+  height: 96px;
+}
+
+.profile-avatar {
+  width: 96px;
+  height: 96px;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 3px solid #fff;
+  box-shadow: 0 10px 20px rgba(20, 22, 28, 0.16);
+}
+
+.profile-avatar-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #1f304f 0%, #3f557c 100%);
+}
+
+.profile-photo-btn {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 2px solid #fff;
+  background: #0f1116;
+  color: #fff;
+  font-size: 18px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+#profile-photo-input {
+  display: none;
+}
+
+.profile-sidebar-card h3 {
+  margin: 4px 0 0;
+  font-size: 30px;
+  text-align: center;
+}
+
+.profile-sidebar-card p {
   margin: 0;
-  font-size: clamp(30px, 3vw, 42px);
+  color: #646a77;
+  font-size: 14px;
+  text-align: center;
+  word-break: break-word;
+}
+
+.profile-menu {
+  margin-top: 12px;
+  width: 100%;
+  display: grid;
+  gap: 8px;
+}
+
+.profile-menu button {
+  text-align: left;
+  border: none;
+  background: #fff;
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: #222631;
+  cursor: pointer;
+}
+
+.profile-menu button.active {
+  background: #eceef4;
+  font-weight: 600;
+}
+
+.profile-menu button.danger {
+  color: #cf2f2f;
+}
+
+.profile-main-card {
+  display: grid;
+  gap: 12px;
+}
+
+.profile-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 4px;
+  border: 1px solid #dadde8;
+  border-radius: 999px;
+  background: #ebecf1;
+}
+
+.profile-tabs button {
+  border: none;
+  background: transparent;
+  border-radius: 999px;
+  padding: 10px;
+  cursor: pointer;
+  color: #363c49;
+}
+
+.profile-tabs button.active {
+  background: #fff;
+  box-shadow: 0 3px 10px rgba(20, 23, 30, 0.1);
+  color: #121521;
+}
+
+.profile-info-card {
+  border: 1px solid #d7dae4;
+  border-radius: 16px;
+  background: #f8f9fc;
+  padding: 24px;
+  display: grid;
+  gap: 18px;
+}
+
+.profile-info-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.profile-info-head h2 {
+  margin: 0;
+  font-size: 42px;
+}
+
+.profile-info-head > button,
+.profile-info-actions button {
+  border: none;
+  background: #0f1116;
+  color: #fff;
+  border-radius: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+.profile-info-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.profile-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 18px;
+}
+
+.profile-form-grid label {
+  display: grid;
+  gap: 6px;
+}
+
+.profile-form-grid label span {
+  font-size: 14px;
+  color: #4f5563;
+}
+
+.profile-form-grid input {
+  border: 1px solid #d8dce7;
+  border-radius: 10px;
+  padding: 12px;
+  background: #f0f1f5;
+  color: #14161d;
+}
+
+.profile-form-grid input:disabled {
+  color: #6d7380;
+  opacity: 1;
+}
+
+.profile-form-grid .full-width {
+  grid-column: 1 / -1;
 }
 
 .profile-subtitle {
@@ -828,30 +1055,409 @@ select {
   color: #666b76;
 }
 
-.profile-grid {
+.wishlist-panel h2 {
+  margin: 0;
+  font-size: clamp(24px, 2.4vw, 34px);
+}
+
+.wishlist-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.wishlist-item {
+  border: 1px solid #d6dae4;
+  border-radius: 14px;
+  background: #f4f6fb;
+  overflow: hidden;
+  display: grid;
+}
+
+.wishlist-item img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+}
+
+.wishlist-item-meta {
+  padding: 12px;
+  display: grid;
+  gap: 4px;
+}
+
+.wishlist-item-meta h4 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.wishlist-item-meta p {
+  margin: 0;
+  color: #626a78;
+  font-size: 13px;
+}
+
+.wishlist-item-meta strong {
+  font-size: 15px;
+  color: #13161d;
+}
+
+.wishlist-item-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 0 12px 12px;
+}
+
+.wishlist-item-actions button {
+  border: 1px solid #ccd1dd;
+  border-radius: 10px;
+  background: #eef1f8;
+  color: #11141b;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.settings-panel h2 {
+  margin: 0;
+  font-size: clamp(24px, 2.4vw, 34px);
+}
+
+.settings-block {
+  border: 1px solid #d6dae4;
+  border-radius: 14px;
+  padding: 14px;
+  background: #f4f6fb;
+  display: grid;
+  gap: 10px;
+}
+
+.settings-block h4 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.theme-toggle-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.theme-toggle-row button {
+  border: 1px solid #cfd4e1;
+  border-radius: 10px;
+  background: #eef1f8;
+  color: #11141b;
+  padding: 9px 14px;
+  cursor: pointer;
+}
+
+.theme-toggle-row button.active {
+  background: #11141b;
+  color: #fff;
+  border-color: #11141b;
+}
+
+.settings-password-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+}
+
+.settings-password-grid label {
+  display: grid;
+  gap: 6px;
+}
+
+.settings-password-grid label span {
+  font-size: 13px;
+  color: #4f5563;
+}
+
+.settings-password-grid input {
+  border: 1px solid #d8dce7;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #fff;
+  color: #12151d;
+}
+
+.settings-actions button {
+  border: none;
+  border-radius: 10px;
+  background: #10141b;
+  color: #fff;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+.app-root.theme-dark {
+  --bg-page: #0a0f1a;
+  --bg-shell: #0f1524;
+  --panel: #161f31;
+  --panel-deep: #1b2538;
+  --text-main: #e9edf7;
+  --text-muted: #a8b4ca;
+  --line: #2a3550;
+  --black: #e9edf7;
+  --white: #101827;
+}
+
+body.theme-dark-body {
+  background: radial-gradient(circle at 8% 0%, #1a2740 0%, #0b1220 56%, #080d17 100%);
+  color: #e9edf7;
+}
+
+.app-root.theme-dark .app-shell {
+  background: linear-gradient(180deg, #10182a 0%, #0c1424 100%);
+}
+
+.app-root.theme-dark .logo-btn,
+.app-root.theme-dark .icon-btn,
+.app-root.theme-dark .section-title-row h3,
+.app-root.theme-dark .hero-content h2,
+.app-root.theme-dark .book-card h3,
+.app-root.theme-dark .book-card h4,
+.app-root.theme-dark .profile-sidebar-card h3,
+.app-root.theme-dark .profile-info-head h2,
+.app-root.theme-dark .profile-info-card h2,
+.app-root.theme-dark .wishlist-item-meta h4,
+.app-root.theme-dark .wishlist-item-meta strong,
+.app-root.theme-dark .order-total,
+.app-root.theme-dark .drawer-head h4,
+.app-root.theme-dark .cart-total {
+  color: #edf2ff;
+}
+
+.app-root.theme-dark .search-box {
+  background: #131d30;
+  border-color: #2c3954;
+}
+
+.app-root.theme-dark .search-box input,
+.app-root.theme-dark .search-icon,
+.app-root.theme-dark .hero-author,
+.app-root.theme-dark .hero-content p,
+.app-root.theme-dark .book-card p,
+.app-root.theme-dark .profile-sidebar-card p,
+.app-root.theme-dark .profile-subtitle,
+.app-root.theme-dark .order-history-meta p,
+.app-root.theme-dark .wishlist-item-meta p,
+.app-root.theme-dark .settings-password-grid label span,
+.app-root.theme-dark .profile-form-grid label span,
+.app-root.theme-dark .facts-grid p:nth-child(odd) {
+  color: #b3bfd4;
+}
+
+.app-root.theme-dark .hero-panel,
+.app-root.theme-dark .book-card,
+.app-root.theme-dark .admin-stat-card,
+.app-root.theme-dark .cart-page,
+.app-root.theme-dark .cart-line,
+.app-root.theme-dark .empty-cart-box,
+.app-root.theme-dark .cart-table-head,
+.app-root.theme-dark .cart-page-footer,
+.app-root.theme-dark .cart-drawer,
+.app-root.theme-dark .drawer-item,
+.app-root.theme-dark .drawer-placeholder,
+.app-root.theme-dark .profile-sidebar-card,
+.app-root.theme-dark .profile-info-card,
+.app-root.theme-dark .profile-menu button,
+.app-root.theme-dark .profile-tabs,
+.app-root.theme-dark .profile-tabs button.active,
+.app-root.theme-dark .order-history-item,
+.app-root.theme-dark .wishlist-item,
+.app-root.theme-dark .settings-block,
+.app-root.theme-dark .book-detail-card,
+.app-root.theme-dark .book-detail-facts,
+.app-root.theme-dark .book-detail-benefits,
+.app-root.theme-dark .book-detail-reco-card,
+.app-root.theme-dark .book-detail-reco-meta,
+.app-root.theme-dark .auth-card,
+.app-root.theme-dark .auth-user-strip,
+.app-root.theme-dark .genre-picker select,
+.app-root.theme-dark .category-pill,
+.app-root.theme-dark .wishlist-btn,
+.app-root.theme-dark .book-card .book-wishlist-btn,
+.app-root.theme-dark .book-detail-reco-heart,
+.app-root.theme-dark .order-history-right button,
+.app-root.theme-dark .wishlist-item-actions button,
+.app-root.theme-dark .theme-toggle-row button,
+.app-root.theme-dark .settings-password-grid input,
+.app-root.theme-dark .profile-form-grid input,
+.app-root.theme-dark .admin-price-row input {
+  background: #161f31;
+  border-color: #2a3550;
+  color: #e9edf7;
+}
+
+.app-root.theme-dark .hero-panel {
+  background: linear-gradient(145deg, #131d30 0%, #101928 100%);
+  box-shadow: 0 18px 34px rgba(5, 9, 16, 0.44);
+}
+
+.app-root.theme-dark .hero-dot {
+  background: #445473;
+  border-color: #516283;
+}
+
+.app-root.theme-dark .hero-dot.active {
+  background: #f2f6ff;
+  border-color: #f2f6ff;
+}
+
+.app-root.theme-dark .category-pill.active,
+.app-root.theme-dark .theme-toggle-row button.active,
+.app-root.theme-dark .settings-actions button,
+.app-root.theme-dark .profile-info-head > button,
+.app-root.theme-dark .profile-info-actions button,
+.app-root.theme-dark .book-card button,
+.app-root.theme-dark .hero-cart-btn,
+.app-root.theme-dark .cart-page-footer button,
+.app-root.theme-dark .drawer-actions button,
+.app-root.theme-dark .auth-card > button,
+.app-root.theme-dark .auth-user-strip button {
+  background: #edf2ff;
+  color: #111a2b;
+  border-color: #edf2ff;
+}
+
+.app-root.theme-dark .wishlist-btn.active,
+.app-root.theme-dark .book-card .book-wishlist-btn.active,
+.app-root.theme-dark .book-detail-reco-heart.active {
+  background: #3a2430;
+  border-color: #a95f78;
+  color: #ffc9d9;
+}
+
+.app-root.theme-dark .book-detail-divider,
+.app-root.theme-dark .order-history-details,
+.app-root.theme-dark .admin-price-editor,
+.app-root.theme-dark .facts-grid,
+.app-root.theme-dark .book-detail-facts,
+.app-root.theme-dark .book-detail-benefits,
+.app-root.theme-dark .cart-table-head,
+.app-root.theme-dark .cart-line,
+.app-root.theme-dark .drawer-item,
+.app-root.theme-dark .profile-tabs,
+.app-root.theme-dark .order-history-item,
+.app-root.theme-dark .settings-block {
+  border-color: #2a3550;
+}
+
+.app-root.theme-dark .profile-menu button.active {
+  background: #24324b;
+}
+
+.profile-info-card.order-history-panel h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.order-history-list {
+  display: grid;
+  gap: 14px;
+}
+
+.order-history-item {
+  border: 1px solid #d6d9e4;
+  border-radius: 16px;
+  background: #f5f6fa;
+  padding: 16px 18px;
+  display: grid;
   gap: 12px;
 }
 
-.profile-grid article {
-  border: 1px solid #dde0e9;
-  border-radius: 12px;
-  background: #fff;
-  padding: 12px;
+.order-history-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
 }
 
-.profile-grid h4 {
+.order-history-meta {
+  display: grid;
+  gap: 6px;
+}
+
+.order-id-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.profile-info-card .order-id-row strong {
+  font-size: 20px;
+  letter-spacing: 0.2px;
+}
+
+.profile-info-card .order-status {
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.order-status.delivered {
+  background: #d9f0df;
+  color: #2c7a43;
+}
+
+.order-status.shipped {
+  background: #dbe7ff;
+  color: #3d5ccd;
+}
+
+.order-status.processing {
+  background: #f3ebc9;
+  color: #967300;
+}
+
+.order-status.cancelled {
+  background: #f5d6db;
+  color: #9c2e40;
+}
+
+.profile-info-card .order-history-meta p {
   margin: 0;
   font-size: 14px;
-  color: #6a6f7a;
+  color: #4a4f5d;
 }
 
-.profile-grid p {
-  margin: 6px 0 0;
-  font-size: 18px;
-  color: #181a20;
-  word-break: break-word;
+.order-history-right {
+  display: grid;
+  justify-items: end;
+  gap: 14px;
+}
+
+.profile-info-card .order-total {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 500;
+  color: #10141f;
+}
+
+.profile-info-card .order-history-right button {
+  border: 1px solid #cfd3df;
+  background: #f2f3f7;
+  border-radius: 12px;
+  padding: 7px 12px;
+  font-size: 14px;
+  color: #10141f;
+  cursor: pointer;
+}
+
+.order-history-details {
+  border-top: 1px solid #d3d8e4;
+  padding-top: 10px;
+  display: grid;
+  gap: 6px;
+}
+
+.profile-info-card .order-history-details p {
+  margin: 0;
+  font-size: 13px;
+  color: #353b48;
 }
 
 .profile-actions {
@@ -867,6 +1473,58 @@ select {
   border-radius: 10px;
   padding: 10px 14px;
   cursor: pointer;
+}
+
+@media (max-width: 980px) {
+  .profile-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-info-head h2 {
+    font-size: clamp(26px, 7vw, 42px);
+  }
+}
+
+@media (max-width: 760px) {
+  .profile-tabs {
+    grid-template-columns: 1fr;
+    border-radius: 14px;
+  }
+
+  .profile-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .order-history-main {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .order-history-right {
+    justify-items: start;
+  }
+
+  .order-id-row strong {
+    font-size: 24px;
+  }
+
+  .order-status {
+    font-size: 14px;
+    padding: 5px 10px;
+  }
+
+  .order-history-meta p {
+    font-size: 16px;
+  }
+
+  .order-total {
+    font-size: 24px;
+  }
+
+  .order-history-right button {
+    font-size: 16px;
+    padding: 8px 12px;
+  }
 }
 
 .book-detail-view {

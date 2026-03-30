@@ -87,6 +87,43 @@ export const logoutUser = (token) =>
     ...withAuth(token),
   });
 
+export const getMyProfile = (token) =>
+  request('/api/users/me', {
+    ...withAuth(token),
+  });
+
+export const updateMyProfile = (token, payload) =>
+  request('/api/users/me', {
+    method: 'PUT',
+    ...withAuth(token),
+    body: JSON.stringify(payload || {}),
+  });
+
+export const changeMyPassword = (token, payload) =>
+  request('/api/users/change-password', {
+    method: 'POST',
+    ...withAuth(token),
+    body: JSON.stringify(payload || {}),
+  });
+
+export const getMyWishlist = (token) =>
+  request('/api/users/wishlist', {
+    ...withAuth(token),
+  });
+
+export const addToWishlist = (token, bookId) =>
+  request('/api/users/wishlist', {
+    method: 'POST',
+    ...withAuth(token),
+    body: JSON.stringify({ bookId }),
+  });
+
+export const removeFromWishlist = (token, bookId) =>
+  request(`/api/users/wishlist/${bookId}`, {
+    method: 'DELETE',
+    ...withAuth(token),
+  });
+
 export const getCart = (token) =>
   request('/api/cart', {
     ...withAuth(token),
@@ -112,6 +149,11 @@ export const createOrder = (token, payload) =>
     body: JSON.stringify(payload || {}),
   });
 
+export const getMyOrders = (token) =>
+  request('/api/orders/my', {
+    ...withAuth(token),
+  });
+
 export const updateBookPrice = (token, bookId, price) =>
   request(`/api/books/${bookId}/price`, {
     method: 'PATCH',
@@ -124,4 +166,9 @@ export const createAbaPurchase = (token, payload) =>
     method: 'POST',
     ...withAuth(token),
     body: JSON.stringify(payload || {}),
+  });
+
+export const getAdminStats = (token) =>
+  request('/api/admin/stats', {
+    ...withAuth(token),
   });
