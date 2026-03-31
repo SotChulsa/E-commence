@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import CheckoutModal from './components/CheckoutModal';
+import AdminDashboard from './pages/admin-dashboard/AdminDashboard';
+import Home from './pages/home/Home';
+import Cart from './pages/cart/cart';
+import Profile from './pages/profile/profile';
+import BookDetail from './pages/book-detail/BookDetail';
 import './App.css';
 import profile from './profile.svg';
 import heart from './heart.svg';
@@ -30,9 +35,12 @@ import {
   verifyOtp,
 } from './api';
 
+// LocalStorage keys for persisting auth and theme between sessions
 const AUTH_STORAGE_KEY = 'digipaper_auth';
 const THEME_STORAGE_KEY = 'digipaper_theme';
 
+// Mock catalog used when backend is unavailable.
+// This allows the app to still show content with placeholder data.
 const MOCK_BOOKS = [
   {
     _id: 'mock-1',
@@ -235,10 +243,15 @@ function App() {
   const [updatingPriceBookId, setUpdatingPriceBookId] = useState('');
   const [featuredIndex, setFeaturedIndex] = useState(0);
   const [selectedBook, setSelectedBook] = useState(null);
+  // Wishlist state tracks selected book IDs the user has saved
   const [wishlistBookIds, setWishlistBookIds] = useState([]);
+
+  // Admin dashboard data state, loaded only when logged in user role is admin
   const [adminStats, setAdminStats] = useState(null);
   const [adminStatsLoading, setAdminStatsLoading] = useState(false);
   const [adminStatsError, setAdminStatsError] = useState('');
+
+  // Profile form state for editing user settings and account info
   const [profileDraft, setProfileDraft] = useState(() => createProfileDraft(initialAuth.user));
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [profileSaving, setProfileSaving] = useState(false);
@@ -253,6 +266,7 @@ function App() {
   const [confirmPasswordDraft, setConfirmPasswordDraft] = useState('');
   const [passwordSaving, setPasswordSaving] = useState(false);
 
+  // Load books once when app mounts. If backend fails, fall back to mock data.
   useEffect(() => {
     const loadBooks = async () => {
       setBooksLoading(true);
@@ -335,6 +349,8 @@ function App() {
     setUiMessageType(type);
   }
 
+  // Wrapper that retries API calls after refreshing auth token on 401 errors.
+  // Keeps user session state in sync and handles expiration gracefully.
   const withTokenRefresh = useCallback(async (callback) => {
     try {
       return await callback(accessToken);
@@ -652,6 +668,11 @@ function App() {
     { label: 'Self-Help', genre: 'Nonfiction' },
     { label: 'Finance', genre: 'Nonfiction' },
     { label: 'History', genre: 'Nonfiction' },
+    { label: 'Thriller', genre: 'Thriller' },
+    { label: 'Mystery', genre: 'Mystery' },
+    { label: 'Romance', genre: 'Romance' },
+    { label: 'Sci-Fi', genre: 'Sci-Fi' },
+    { label: 'Fantasy', genre: 'Fantasy' },
   ];
 
   const cartCount = useMemo(
@@ -669,23 +690,14 @@ function App() {
     [books, wishlistBookIds]
   );
 
-  const adminStatCards = useMemo(
-    () => [
-      { label: 'Total Orders', value: adminStats?.totalOrders ?? 0 },
-      { label: 'New Orders', value: adminStats?.newOrders ?? 0 },
-      { label: 'Delivered', value: adminStats?.deliveredOrders ?? 0 },
-      { label: 'Cancelled', value: adminStats?.cancelledOrders ?? 0 },
-      { label: 'Books', value: adminStats?.totalBooks ?? 0 },
-      { label: 'Users', value: adminStats?.totalUsers ?? 0 },
-    ],
-    [adminStats]
-  );
 
-  const clearStatus = () => {
+
+  // Clear transient UI notifications and auth status messages.
+  const clearStatus = useCallback(() => {
     setAuthError('');
     setAuthMessage('');
     setUiMessage('');
-  };
+  }, []);
 
   useEffect(() => {
     if (!uiMessage || uiMessageType === 'loading') {
@@ -699,13 +711,15 @@ function App() {
     return () => clearTimeout(timeout);
   }, [uiMessage, uiMessageType]);
 
-  const openAuth = (mode = 'signin') => {
+  // Show authentication panel (signin/signup/recovery) to user.
+  const openAuth = useCallback((mode = 'signin') => {
     clearStatus();
     setAuthMode(mode);
     setActiveView('auth');
     setIsDrawerOpen(false);
-  };
+  }, [clearStatus]);
 
+  // Switch to profile view; requires login and resets profile tab state.
   const openProfileView = () => {
     if (!user) {
       openAuth('signin');
@@ -956,7 +970,7 @@ function App() {
     } catch (error) {
       showUiMessage(error.message || 'Could not update wishlist.', 'error');
     }
-  }, [accessToken, wishlistBookIds, withTokenRefresh]);
+  }, [accessToken, wishlistBookIds, withTokenRefresh, openAuth]);
 
   const handleSignIn = async () => {
     if (!email || !password) {
@@ -1176,122 +1190,9 @@ function App() {
     showUiMessage('Logged out.', 'info');
   };
 
-  const renderBookCard = (item) => (
-    <article
-      key={item._id}
-      className="book-card clickable"
-      role="button"
-      tabIndex={0}
-      onClick={() => openBookDetail(item)}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          openBookDetail(item);
-        }
-      }}
-      aria-label={`Open details for ${item.title || 'book'}`}
-    >
-      <img src={item.image || bookCover} alt={item.title || 'Book'} />
-      <div className="book-meta">
-        <h3>{item.title || 'Untitled'}</h3>
-        <p>{item.author || 'Unknown author'}</p>
-        <div className="book-row">
-          <h4>{toCurrency(item.price)}</h4>
-          <div className="book-row-actions">
-            <button
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                handleAddToCart(item._id);
-              }}
-              disabled={addingBookId === item._id}
-            >
-              {addingBookId === item._id ? 'Adding...' : 'Add to Cart'}
-            </button>
-            <button
-              type="button"
-              className={`book-wishlist-btn ${wishlistBookIds.includes(item._id) ? 'active' : ''}`}
-              aria-label={wishlistBookIds.includes(item._id) ? 'Remove from wishlist' : 'Add to wishlist'}
-              onClick={(event) => {
-                event.stopPropagation();
-                toggleWishlist(item._id);
-              }}
-            >
-              <span className="heart-glyph" aria-hidden="true">♡</span>
-            </button>
-          </div>
-        </div>
-        {user?.role === 'admin' ? (
-          <div
-            className="admin-price-editor"
-            onClick={(event) => event.stopPropagation()}
-            onKeyDown={(event) => event.stopPropagation()}
-          >
-            <label htmlFor={`price-${item._id}`}>Edit Price</label>
-            <div className="admin-price-row">
-              <input
-                id={`price-${item._id}`}
-                type="number"
-                step="0.01"
-                min="0"
-                value={priceDrafts[item._id] ?? ''}
-                onChange={(event) =>
-                  setPriceDrafts((current) => ({ ...current, [item._id]: event.target.value }))
-                }
-              />
-              <button
-                type="button"
-                onClick={() => handleUpdateBookPrice(item._id)}
-                disabled={updatingPriceBookId === item._id}
-              >
-                {updatingPriceBookId === item._id ? 'Saving...' : 'Save'}
-              </button>
-            </div>
-          </div>
-        ) : null}
-      </div>
-    </article>
-  );
 
-  const getOrderStatusLabel = (status) => {
-    const value = String(status || '').toLowerCase();
-    if (value === 'delivered') return 'Delivered';
-    if (value === 'shipped') return 'Shipped';
-    if (value === 'cancelled') return 'Cancelled';
-    if (value === 'pending' || value === 'paid') return 'Processing';
-    return value ? `${value.charAt(0).toUpperCase()}${value.slice(1)}` : 'Processing';
-  };
 
-  const getOrderStatusClass = (status) => {
-    const value = String(status || '').toLowerCase();
-    if (value === 'delivered') return 'delivered';
-    if (value === 'shipped') return 'shipped';
-    if (value === 'cancelled') return 'cancelled';
-    return 'processing';
-  };
 
-  const getOrderCode = (orderId = '', index = 0) => {
-    const suffix = String(orderId).slice(-6).toUpperCase() || String(index + 1).padStart(3, '0');
-    return `ORD-${suffix}`;
-  };
-
-  const getOrderDateLabel = (value) => {
-    const date = value ? new Date(value) : null;
-    if (!date || Number.isNaN(date.getTime())) {
-      return 'Date unavailable';
-    }
-
-    return date.toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
-
-  const getOrderItemCount = (order) => {
-    const items = Array.isArray(order?.items) ? order.items : [];
-    return items.reduce((sum, item) => sum + Number(item?.quantity || 1), 0);
-  };
 
   return (
     <div className={`app-root theme-${themeMode}`}>
@@ -1356,652 +1257,105 @@ function App() {
             </header>
 
             {activeView === 'home' ? (
-              <main className="home-view fade-in-anim">
-                <section
-                  className="hero-panel clickable"
-                  onClick={() => openBookDetail(trendingBook)}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                      event.preventDefault();
-                      openBookDetail(trendingBook);
-                    }
-                  }}
-                  aria-label={`Open details for ${trendingBook?.title || 'featured book'}`}
-                >
-                  {trendingBook?.image ? (
-                    <img
-                      key={`hero-image-${trendingBook?._id || featuredIndex}`}
-                      className="hero-img-anim"
-                      src={trendingBook.image}
-                      alt={trendingBook?.title || 'Featured book'}
-                    />
-                  ) : (
-                    <div className="hero-image-placeholder" aria-hidden="true" />
-                  )}
-                  <div key={`hero-content-${trendingBook?._id || featuredIndex}`} className="hero-content">
-                    <span className="featured-badge hero-stagger hero-stagger-0">Featured Book</span>
-                    <h2 className="hero-stagger hero-stagger-1">{trendingBook?.title || 'Book Spotlight'}</h2>
-                    <p className="hero-author hero-stagger hero-stagger-2">by {trendingBook?.author || 'Unknown author'}</p>
-                    <p className="hero-stagger hero-stagger-3">{trendingBook?.description || 'Curated title for today.'}</p>
-                    <div className="hero-actions hero-stagger hero-stagger-4">
-                      <strong>{toCurrency(trendingBook?.price)}</strong>
-                      <button
-                        className="animated-btn hero-cart-btn"
-                        type="button"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          handleAddToCart(trendingBook?._id);
-                        }}
-                        disabled={addingBookId === trendingBook?._id}
-                      >
-                        {addingBookId === trendingBook?._id ? 'Adding...' : 'Add to Cart'}
-                      </button>
-                      <button
-                        className={`wishlist-btn ${wishlistBookIds.includes(trendingBook?._id) ? 'active' : ''}`}
-                        type="button"
-                        aria-label={wishlistBookIds.includes(trendingBook?._id) ? 'Remove from wishlist' : 'Add to wishlist'}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          toggleWishlist(trendingBook?._id);
-                        }}
-                      >
-                        <span className="heart-glyph" aria-hidden="true">♡</span>
-                      </button>
-                    </div>
-                    <div className="hero-dots" role="tablist" aria-label="Featured book navigation">
-                      {featuredBooks.map((book, index) => {
-                        const isActive = index === featuredIndex;
-                        return (
-                          <button
-                            key={book._id || `${book.title}-${index}`}
-                            type="button"
-                            role="tab"
-                            className={`hero-dot ${isActive ? 'active' : ''}`}
-                            aria-selected={isActive}
-                            aria-label={`Show ${book.title || 'featured book'}`}
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              setFeaturedIndex(index);
-                            }}
-                          />
-                        );
-                      })}
-                    </div>
-                  </div>
-                </section>
-
-                <section className="category-row" aria-label="Book categories">
-                  {categoryTabs.map((tab) => (
-                    <button
-                      key={tab.label}
-                      type="button"
-                      className={`category-pill ${selectedCategoryTab === tab.label ? 'active' : ''}`}
-                      onClick={() => {
-                        setSelectedCategoryTab(tab.label);
-                        setSelectedGenre(tab.genre);
-                      }}
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
-                </section>
-
-                <section className="books-section">
-                  <div className="section-title-row">
-                    <h3>Top Seller</h3>
-                  </div>
-
-                  <div className="books-grid fade-in-anim">
-                    {booksLoading ? <p className="section-note">Loading books...</p> : null}
-                    {booksError ? <p className="section-note warning">{booksError}</p> : null}
-                    {!booksLoading && !usingMockCatalog && books.length === 0 ? (
-                      <p className="section-note warning">No books in backend yet. Create books first to enable Add to Cart.</p>
-                    ) : null}
-                    {!booksLoading && topSellers.length === 0 ? (
-                      <p className="section-note">No books found for this filter.</p>
-                    ) : null}
-                    {!booksLoading ? topSellers.map(renderBookCard) : null}
-                  </div>
-                </section>
-
-                <section className="books-section">
-                  <div className="section-title-row">
-                    <h3>Recommended For You</h3>
-                  </div>
-                  <div className="books-grid fade-in-anim">
-                    {!booksLoading ? recommended.map(renderBookCard) : null}
-                  </div>
-                </section>
-
-                {uiMessage ? (
-                  <div className={`floating-message ${uiMessageType}`} role="status" aria-live="polite">
-                    <span className="toast-indicator" aria-hidden="true" />
-                    <span>{uiMessage}</span>
-                  </div>
-                ) : null}
-              </main>
+              <Home
+                trendingBook={trendingBook}
+                openBookDetail={openBookDetail}
+                featuredBooks={featuredBooks}
+                featuredIndex={featuredIndex}
+                setFeaturedIndex={setFeaturedIndex}
+                wishlistBookIds={wishlistBookIds}
+                toggleWishlist={toggleWishlist}
+                handleAddToCart={handleAddToCart}
+                addingBookId={addingBookId}
+                categoryTabs={categoryTabs}
+                selectedCategoryTab={selectedCategoryTab}
+                setSelectedCategoryTab={setSelectedCategoryTab}
+                setSelectedGenre={setSelectedGenre}
+                booksLoading={booksLoading}
+                booksError={booksError}
+                usingMockCatalog={usingMockCatalog}
+                books={books}
+                topSellers={topSellers}
+                recommended={recommended}
+                uiMessage={uiMessage}
+                uiMessageType={uiMessageType}
+                user={user}
+                priceDrafts={priceDrafts}
+                setPriceDrafts={setPriceDrafts}
+                handleUpdateBookPrice={handleUpdateBookPrice}
+                updatingPriceBookId={updatingPriceBookId}
+              />
             ) : null}
 
             {activeView === 'admin-dashboard' ? (
-              <main className="admin-dashboard-view fade-in-anim">
-                <div className="section-title-row">
-                  <h3>Admin Dashboard</h3>
-                </div>
-                <p className="section-note">Live operational snapshot from backend.</p>
-
-                {adminStatsLoading ? <p className="section-note">Loading dashboard stats...</p> : null}
-                {adminStatsError ? <p className="section-note warning">{adminStatsError}</p> : null}
-
-                <div className="admin-stats-grid">
-                  {adminStatCards.map((card) => (
-                    <article key={card.label} className="admin-stat-card">
-                      <h4>{card.label}</h4>
-                      <p>{card.value}</p>
-                    </article>
-                  ))}
-                </div>
-
-                <div className="profile-actions">
-                  <button type="button" onClick={() => setActiveView('home')}>Back to Home</button>
-                </div>
-              </main>
+              <AdminDashboard
+                adminStats={adminStats}
+                adminStatsLoading={adminStatsLoading}
+                adminStatsError={adminStatsError}
+                setActiveView={setActiveView}
+              />
             ) : null}
 
             {activeView === 'cart-page' ? (
-              <main className="cart-page">
-                <h2>
-                  <img src={cart} alt="cart" /> My Cart
-                </h2>
-                <div className="cart-table-head">
-                  <span>Product</span>
-                  <span>Price</span>
-                  <span>Qty</span>
-                  <span>Total</span>
-                </div>
-
-                {cartItems.length === 0 ? (
-                  <div className="empty-cart-box">Your cart is empty.</div>
-                ) : (
-                  cartItems.map((item) => (
-                    <div key={item._id} className="cart-line">
-                      <div className="cart-product-col">
-                        <img src={item.image || bookCover} alt={item.title || 'Book'} />
-                        <div>
-                          <strong>{item.title || 'Untitled'}</strong>
-                          <p>{item.author || 'Unknown author'}</p>
-                        </div>
-                      </div>
-                      <span>{toCurrency(item.price)}</span>
-                      <div className="qty-box">
-                        <button type="button" onClick={() => handleRemoveFromCart(item._id)}>
-                          -
-                        </button>
-                        <span>{item.quantity}</span>
-                        <button type="button" onClick={() => handleIncreaseQuantity(item._id)}>
-                          +
-                        </button>
-                      </div>
-                      <div className="line-total-col">
-                        <span>{toCurrency((item.price || 0) * (item.quantity || 0))}</span>
-                        <button type="button" onClick={() => handleRemoveFromCart(item._id)}>
-                          Remove
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                )}
-
-                <div className="cart-page-footer">
-                  <p className="cart-total">Grand Total: {toCurrency(cartTotal)}</p>
-                  <div>
-                    <button type="button" onClick={() => setActiveView('home')}>
-                      Shop More
-                    </button>
-                    <button type="button" onClick={handleCheckout}>Check Out</button>
-                  </div>
-                </div>
-              </main>
+              <Cart
+                cartItems={cartItems}
+                handleRemoveFromCart={handleRemoveFromCart}
+                handleIncreaseQuantity={handleIncreaseQuantity}
+                cartTotal={cartTotal}
+                setActiveView={setActiveView}
+                handleCheckout={handleCheckout}
+              />
             ) : null}
 
+            {/* user profile is displayed here*/}
             {activeView === 'profile' ? (
-              <main className="profile-view profile-layout">
-                <aside className="profile-sidebar-card">
-                  <div className="profile-avatar-wrap">
-                    {profileDraft.avatar ? (
-                      <img src={profileDraft.avatar} alt={profileDraft.name || 'Profile'} className="profile-avatar" />
-                    ) : (
-                      <div className="profile-avatar profile-avatar-fallback" aria-hidden="true">
-                        {(profileDraft.name || user?.name || 'U').charAt(0).toUpperCase()}
-                      </div>
-                    )}
-                    <label className="profile-photo-btn" htmlFor="profile-photo-input">+</label>
-                    <input
-                      id="profile-photo-input"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleProfileImageSelect}
-                    />
-                  </div>
-
-                  <h3>{profileDraft.name || user?.name || 'User'}</h3>
-                  <p>{profileDraft.email || user?.email || ''}</p>
-
-                  <nav className="profile-menu" aria-label="Profile menu">
-                    <button
-                      type="button"
-                      className={profileTab === 'Profile Information' ? 'active' : ''}
-                      onClick={() => setProfileTab('Profile Information')}
-                    >
-                      My Profile
-                    </button>
-                    <button
-                      type="button"
-                      className={profileTab === 'Order History' ? 'active' : ''}
-                      onClick={() => setProfileTab('Order History')}
-                    >
-                      Orders
-                    </button>
-                    <button
-                      type="button"
-                      className={profileTab === 'Wishlist' ? 'active' : ''}
-                      onClick={() => setProfileTab('Wishlist')}
-                    >
-                      Wishlist
-                    </button>
-                    <button
-                      type="button"
-                      className={profileTab === 'Settings' ? 'active' : ''}
-                      onClick={() => setProfileTab('Settings')}
-                    >
-                      Settings
-                    </button>
-                    <button type="button" className="danger" onClick={handleLogout}>Logout</button>
-                  </nav>
-                </aside>
-
-                <section className="profile-main-card">
-                  <div className="profile-tabs">
-                    {['Profile Information', 'Order History', 'Wishlist'].map((tab) => (
-                      <button
-                        key={tab}
-                        type="button"
-                        className={profileTab === tab ? 'active' : ''}
-                        onClick={() => setProfileTab(tab)}
-                      >
-                        {tab}
-                      </button>
-                    ))}
-                  </div>
-
-                  {profileTab === 'Profile Information' ? (
-                    <div className="profile-info-card">
-                      <div className="profile-info-head">
-                        <h2>Personal Information</h2>
-                        {!isEditingProfile ? (
-                          <button type="button" onClick={() => setIsEditingProfile(true)}>Edit Profile</button>
-                        ) : (
-                          <div className="profile-info-actions">
-                            <button type="button" onClick={() => { setIsEditingProfile(false); setProfileDraft(createProfileDraft(user)); }}>
-                              Cancel
-                            </button>
-                            <button type="button" onClick={handleSaveProfile} disabled={profileSaving}>
-                              {profileSaving ? 'Saving...' : 'Save'}
-                            </button>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="profile-form-grid">
-                        <label>
-                          <span>Full Name</span>
-                          <input
-                            type="text"
-                            value={profileDraft.name}
-                            onChange={(event) => handleProfileInputChange('name', event.target.value)}
-                            disabled={!isEditingProfile || profileSaving}
-                          />
-                        </label>
-                        <label>
-                          <span>Email Address</span>
-                          <input type="email" value={profileDraft.email} disabled />
-                        </label>
-                        <label>
-                          <span>Phone Number</span>
-                          <input
-                            type="text"
-                            value={profileDraft.phone}
-                            onChange={(event) => handleProfileInputChange('phone', event.target.value)}
-                            disabled={!isEditingProfile || profileSaving}
-                          />
-                        </label>
-                        <label>
-                          <span>Street Address</span>
-                          <input
-                            type="text"
-                            value={profileDraft.address}
-                            onChange={(event) => handleProfileInputChange('address', event.target.value)}
-                            disabled={!isEditingProfile || profileSaving}
-                          />
-                        </label>
-                        <label>
-                          <span>City</span>
-                          <input
-                            type="text"
-                            value={profileDraft.city}
-                            onChange={(event) => handleProfileInputChange('city', event.target.value)}
-                            disabled={!isEditingProfile || profileSaving}
-                          />
-                        </label>
-                        <label>
-                          <span>ZIP Code</span>
-                          <input
-                            type="text"
-                            value={profileDraft.zip}
-                            onChange={(event) => handleProfileInputChange('zip', event.target.value)}
-                            disabled={!isEditingProfile || profileSaving}
-                          />
-                        </label>
-                        <label className="full-width">
-                          <span>Country</span>
-                          <input
-                            type="text"
-                            value={profileDraft.country}
-                            onChange={(event) => handleProfileInputChange('country', event.target.value)}
-                            disabled={!isEditingProfile || profileSaving}
-                          />
-                        </label>
-                      </div>
-                    </div>
-                  ) : null}
-
-                  {profileTab === 'Order History' ? (
-                    <div className="profile-info-card order-history-panel">
-                      <h2>Order History</h2>
-
-                      {orderHistoryLoading ? <p className="profile-subtitle">Loading order history...</p> : null}
-                      {orderHistoryError ? <p className="profile-subtitle">{orderHistoryError}</p> : null}
-
-                      {!orderHistoryLoading && !orderHistoryError && orderHistory.length === 0 ? (
-                        <p className="profile-subtitle">No orders yet. Your completed orders will appear here.</p>
-                      ) : null}
-
-                      <div className="order-history-list">
-                        {orderHistory.map((order, index) => {
-                          const orderStatusClass = getOrderStatusClass(order?.status);
-                          const orderStatusLabel = getOrderStatusLabel(order?.status);
-                          const itemCount = getOrderItemCount(order);
-                          const orderCode = getOrderCode(order?._id, index);
-                          const isExpanded = expandedOrderId === order?._id;
-
-                          return (
-                            <article key={order?._id || `${orderCode}-${index}`} className="order-history-item">
-                              <div className="order-history-main">
-                                <div className="order-history-meta">
-                                  <div className="order-id-row">
-                                    <strong>{orderCode}</strong>
-                                    <span className={`order-status ${orderStatusClass}`}>{orderStatusLabel}</span>
-                                  </div>
-                                  <p>{getOrderDateLabel(order?.createdAt)}</p>
-                                  <p>{itemCount} {itemCount === 1 ? 'item' : 'items'}</p>
-                                </div>
-
-                                <div className="order-history-right">
-                                  <p className="order-total">{toCurrency(Number(order?.totalPrice || 0))}</p>
-                                  <button
-                                    type="button"
-                                    onClick={() => setExpandedOrderId(isExpanded ? '' : order?._id)}
-                                  >
-                                    {isExpanded ? 'Hide Details' : 'View Details'}
-                                  </button>
-                                </div>
-                              </div>
-
-                              {isExpanded ? (
-                                <div className="order-history-details">
-                                  <p><strong>Payment:</strong> {String(order?.paymentMethod || 'card').toUpperCase()}</p>
-                                  <p><strong>Shipping:</strong> {order?.shippingInfo?.address || 'No address provided'}</p>
-                                  <p><strong>Reference:</strong> {order?.paymentReference || 'N/A'}</p>
-                                </div>
-                              ) : null}
-                            </article>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ) : null}
-
-                  {profileTab === 'Wishlist' ? (
-                    <div className="profile-info-card wishlist-panel">
-                      <h2>Wishlist</h2>
-                      {wishlistBooks.length === 0 ? (
-                        <p className="profile-subtitle">No wishlist items yet. Tap the heart on books to save them.</p>
-                      ) : (
-                        <div className="wishlist-grid">
-                          {wishlistBooks.map((book) => (
-                            <article key={book._id} className="wishlist-item">
-                              <img src={book.image || bookCover} alt={book.title || 'Book'} />
-                              <div className="wishlist-item-meta">
-                                <h4>{book.title || 'Untitled'}</h4>
-                                <p>{book.author || 'Unknown author'}</p>
-                                <strong>{toCurrency(book.price)}</strong>
-                              </div>
-                              <div className="wishlist-item-actions">
-                                <button type="button" onClick={() => openBookDetail(book)}>View</button>
-                                <button type="button" onClick={() => toggleWishlist(book._id)}>Remove</button>
-                              </div>
-                            </article>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ) : null}
-
-                  {profileTab === 'Settings' ? (
-                    <div className="profile-info-card settings-panel">
-                      <h2>Settings</h2>
-
-                      <section className="settings-block">
-                        <h4>Appearance</h4>
-                        <p className="profile-subtitle">Switch between light and dark mode.</p>
-                        <div className="theme-toggle-row">
-                          <button
-                            type="button"
-                            className={themeMode === 'light' ? 'active' : ''}
-                            onClick={() => setThemeMode('light')}
-                          >
-                            Light Mode
-                          </button>
-                          <button
-                            type="button"
-                            className={themeMode === 'dark' ? 'active' : ''}
-                            onClick={() => setThemeMode('dark')}
-                          >
-                            Dark Mode
-                          </button>
-                        </div>
-                      </section>
-
-                      <section className="settings-block">
-                        <h4>Security</h4>
-                        <p className="profile-subtitle">Change your account password.</p>
-
-                        <div className="settings-password-grid">
-                          <label>
-                            <span>Current Password</span>
-                            <input
-                              type="password"
-                              value={currentPasswordDraft}
-                              onChange={(event) => setCurrentPasswordDraft(event.target.value)}
-                              disabled={passwordSaving}
-                            />
-                          </label>
-
-                          <label>
-                            <span>New Password</span>
-                            <input
-                              type="password"
-                              value={newPasswordDraft}
-                              onChange={(event) => setNewPasswordDraft(event.target.value)}
-                              disabled={passwordSaving}
-                            />
-                          </label>
-
-                          <label>
-                            <span>Confirm New Password</span>
-                            <input
-                              type="password"
-                              value={confirmPasswordDraft}
-                              onChange={(event) => setConfirmPasswordDraft(event.target.value)}
-                              disabled={passwordSaving}
-                            />
-                          </label>
-                        </div>
-
-                        <div className="settings-actions">
-                          <button type="button" onClick={handleChangePassword} disabled={passwordSaving}>
-                            {passwordSaving ? 'Saving...' : 'Update Password'}
-                          </button>
-                        </div>
-                      </section>
-                    </div>
-                  ) : null}
-
-                  {profileTab !== 'Profile Information' && profileTab !== 'Order History' && profileTab !== 'Wishlist' && profileTab !== 'Settings' ? (
-                    <div className="profile-info-card">
-                      <h2>{profileTab}</h2>
-                      <p className="profile-subtitle">This section is ready for your next feature.</p>
-                      <div className="profile-actions">
-                        <button type="button" onClick={() => setActiveView('home')}>Back to Home</button>
-                        <button type="button" onClick={() => setActiveView('cart-page')}>View Cart</button>
-                      </div>
-                    </div>
-                  ) : null}
-                </section>
-              </main>
+              <Profile
+                profileDraft={profileDraft}
+                user={user}
+                profileTab={profileTab}
+                setProfileTab={setProfileTab}
+                isEditingProfile={isEditingProfile}
+                setIsEditingProfile={setIsEditingProfile}
+                handleProfileInputChange={handleProfileInputChange}
+                handleSaveProfile={handleSaveProfile}
+                profileSaving={profileSaving}
+                orderHistory={orderHistory}
+                orderHistoryLoading={orderHistoryLoading}
+                orderHistoryError={orderHistoryError}
+                expandedOrderId={expandedOrderId}
+                setExpandedOrderId={setExpandedOrderId}
+                wishlistBooks={wishlistBooks}
+                toggleWishlist={toggleWishlist}
+                openBookDetail={openBookDetail}
+                handleLogout={handleLogout}
+                setActiveView={setActiveView}
+                themeMode={themeMode}
+                setThemeMode={setThemeMode}
+                currentPasswordDraft={currentPasswordDraft}
+                setCurrentPasswordDraft={setCurrentPasswordDraft}
+                newPasswordDraft={newPasswordDraft}
+                setNewPasswordDraft={setNewPasswordDraft}
+                confirmPasswordDraft={confirmPasswordDraft}
+                setConfirmPasswordDraft={setConfirmPasswordDraft}
+                passwordSaving={passwordSaving}
+                handleChangePassword={handleChangePassword}
+                handleProfileImageSelect={handleProfileImageSelect}
+                createProfileDraft={createProfileDraft}
+              />
             ) : null}
 
+            {/* book detail will be displayed here */}
             {activeView === 'book-detail' ? (
-              <main className="book-detail-view">
-                <button
-                  type="button"
-                  className="back-home-link"
-                  onClick={() => setActiveView('home')}
-                >
-                  Back to home
-                </button>
-                <section className="book-detail-card">
-                  <img src={activeDetailBook?.image || bookCover} alt={activeDetailBook?.title || 'Book'} />
-                  <div className="book-detail-content">
-                    <span className="featured-badge">{activeDetailBook?.genre || 'Featured'}</span>
-                    <h2>{activeDetailBook?.title || 'Untitled'}</h2>
-                    <p className="hero-author">by {activeDetailBook?.author || 'Unknown author'}</p>
-                    <p className="book-detail-rating">Rating 4.8 out of 5</p>
-                    <div className="book-detail-divider" />
-                    <h4>Description</h4>
-                    <p>{activeDetailBook?.description || 'No description available yet.'}</p>
-                    <div className="book-detail-divider" />
-                    <div className="book-detail-price-row">
-                      <p className="book-detail-price">{toCurrency(activeDetailBook?.price)}</p>
-                      <p className="book-detail-compare">{toCurrency((activeDetailBook?.price || 0) * 1.35)}</p>
-                    </div>
-                    <div className="book-detail-actions">
-                      <button
-                        type="button"
-                        onClick={() => handleAddToCart(activeDetailBook?._id)}
-                        disabled={addingBookId === activeDetailBook?._id}
-                      >
-                        {addingBookId === activeDetailBook?._id ? 'Adding...' : 'Add to Cart'}
-                      </button>
-                      <button
-                        type="button"
-                        className={`wishlist-btn ${wishlistBookIds.includes(activeDetailBook?._id) ? 'active' : ''}`}
-                        onClick={() => toggleWishlist(activeDetailBook?._id)}
-                        aria-label={wishlistBookIds.includes(activeDetailBook?._id) ? 'Remove from wishlist' : 'Add to wishlist'}
-                      >
-                        <span className="heart-glyph" aria-hidden="true">♡</span>
-                      </button>
-                    </div>
-
-                    <div className="book-detail-benefits">
-                      <article>
-                        <strong>In Stock</strong>
-                        <p>Ships immediately</p>
-                      </article>
-                      <article>
-                        <strong>Free Shipping</strong>
-                        <p>Orders over $50</p>
-                      </article>
-                      <article>
-                        <strong>Easy Returns</strong>
-                        <p>30-day return policy</p>
-                      </article>
-                    </div>
-
-                    <section className="book-detail-facts">
-                      <h4>Product Details</h4>
-                      <div className="facts-grid">
-                        <p>Format:</p><p>Hardcover</p>
-                        <p>Publisher:</p><p>Digipaper Publishing</p>
-                        <p>Language:</p><p>English</p>
-                        <p>ISBN:</p><p>978-9278091382</p>
-                      </div>
-                    </section>
-                  </div>
-                </section>
-
-                <section className="book-detail-more">
-                  <h3>Want more?</h3>
-                  <p>Check out these other amazing books</p>
-                  <div className="book-detail-reco-grid">
-                    {detailRecommendations.map((item) => (
-                      <article
-                        key={item._id}
-                        className="book-detail-reco-card"
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => openBookDetail(item)}
-                        onKeyDown={(event) => {
-                          if (event.key === 'Enter' || event.key === ' ') {
-                            event.preventDefault();
-                            openBookDetail(item);
-                          }
-                        }}
-                      >
-                        <button
-                          type="button"
-                          className={`book-detail-reco-heart ${wishlistBookIds.includes(item._id) ? 'active' : ''}`}
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            toggleWishlist(item._id);
-                          }}
-                          aria-label={wishlistBookIds.includes(item._id) ? 'Remove from wishlist' : 'Add to wishlist'}
-                        >
-                          <span className="heart-glyph" aria-hidden="true">♡</span>
-                        </button>
-                        <img src={item.image || bookCover} alt={item.title || 'Book'} />
-                        <div className="book-detail-reco-meta">
-                          <h4>{item.title || 'Untitled'}</h4>
-                          <p>{item.author || 'Unknown author'}</p>
-                          <div>
-                            <span>{toCurrency(item.price)}</span>
-                            <button
-                              type="button"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                handleAddToCart(item._id);
-                              }}
-                            >
-                              Add to Cart
-                            </button>
-                          </div>
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                </section>
-              </main>
+              <BookDetail
+                activeDetailBook={activeDetailBook}
+                handleAddToCart={handleAddToCart}
+                addingBookId={addingBookId}
+                wishlistBookIds={wishlistBookIds}
+                toggleWishlist={toggleWishlist}
+                detailRecommendations={detailRecommendations}
+                openBookDetail={openBookDetail}
+                setActiveView={setActiveView}
+              />
             ) : null}
 
           </>
