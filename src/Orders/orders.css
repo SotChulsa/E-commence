@@ -1,0 +1,24 @@
+.orders-container {
+  padding: 20px;
+}
+
+.orders-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.orders-table th,
+.orders-table td {
+  padding: 12px;
+  border-bottom: 1px solid #ddd;
+}
+
+.orders-table th {
+  background: #444;
+  color: white;
+}
+
+.orders-table tr:hover{
+    background-color: antiquewhite;
+}
+
