@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import CheckoutModal from './components/CheckoutModal';
+import AdminDashboard from './pages/admin-dashboard/AdminDashboard';
+import AddBook from './pages/add-book/AddBook';
+import Home from './pages/home/Home';
+import Cart from './pages/cart/cart';
+import Profile from './pages/profile/profile';
+import BookDetail from './pages/book-detail/BookDetail';
 import './App.css';
 import profile from './profile.svg';
 import heart from './heart.svg';
@@ -258,6 +264,12 @@ function App() {
   const initialAuth = readStoredAuth();
 
   const [activeView, setActiveView] = useState('home');
+  const [viewParams, setViewParams] = useState({});
+
+  const handleSetActiveView = (view, params) => {
+    setActiveView(view);
+    setViewParams(params || {});
+  };
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   const [user, setUser] = useState(initialAuth.user);
@@ -359,7 +371,7 @@ function App() {
     const emailFromLink = params.get('email') || '';
 
     if (view === 'auth' && mode === 'reset' && tokenFromLink) {
-      setActiveView('auth');
+      handleSetActiveView('auth');
       setAuthMode('reset');
       setResetToken(tokenFromLink);
       if (emailFromLink) {
@@ -431,7 +443,7 @@ function App() {
         syncAuthState({ user: null, accessToken: '', refreshToken: '' });
         setCartItems([]);
         showUiMessage('Session expired. Please sign in again.', 'error');
-        setActiveView('auth');
+        handleSetActiveView('auth');
         setAuthMode('signin');
 
         const expiredSessionError = new Error('Session expired. Please sign in again.');
@@ -780,6 +792,15 @@ function App() {
     { label: 'Self-Help', genre: 'Nonfiction' },
     { label: 'Finance', genre: 'Nonfiction' },
     { label: 'History', genre: 'Nonfiction' },
+<<<<<<< HEAD
+=======
+    { label: 'Thriller', genre: 'Thriller' },
+    { label: 'Mystery', genre: 'Mystery' },
+    { label: 'Romance', genre: 'Romance' },
+    { label: 'Sci-Fi', genre: 'Sci-Fi' },
+    { label: 'Fantasy', genre: 'Fantasy' },
+    { label: 'Fiction', genre: 'Fiction' },
+>>>>>>> fbf78de (add buttons for admin roles to add edit and delete books)
   ];
 
   const cartCount = useMemo(
@@ -1642,7 +1663,7 @@ function App() {
         {activeView !== 'auth' ? (
           <>
             <header className="app-header">
-              <button type="button" className="logo-btn" onClick={() => setActiveView('home')}>
+              <button type="button" className="logo-btn" onClick={() => handleSetActiveView('home')}>
                 Digipaper
               </button>
 
@@ -1669,7 +1690,7 @@ function App() {
                   <button
                     type="button"
                     className="icon-btn admin-nav-btn"
-                    onClick={() => setActiveView('admin-dashboard')}
+                    onClick={() => handleSetActiveView('admin-dashboard')}
                     aria-label="Admin Dashboard"
                   >
                     <span>Dashboard</span>
@@ -1891,6 +1912,7 @@ function App() {
             ) : null}
 
             {activeView === 'admin-dashboard' ? (
+<<<<<<< HEAD
               <main className="admin-dashboard-view fade-in-anim">
                 <div className="section-title-row">
                   <h3>Admin Dashboard</h3>
@@ -1969,6 +1991,39 @@ function App() {
                   </div>
                 </div>
               </main>
+=======
+              <AdminDashboard
+                adminStats={adminStats}
+                adminStatsLoading={adminStatsLoading}
+                adminStatsError={adminStatsError}
+                setActiveView={handleSetActiveView}
+                accessToken={accessToken}
+                withTokenRefresh={withTokenRefresh}
+                showUiMessage={showUiMessage}
+                usingMockCatalog={usingMockCatalog}
+              />
+            ) : null}
+
+            {activeView === 'add-book' || activeView === 'edit-book' ? (
+              <AddBook
+                setActiveView={handleSetActiveView}
+                accessToken={accessToken}
+                withTokenRefresh={withTokenRefresh}
+                showUiMessage={showUiMessage}
+                editBook={viewParams.book}
+              />
+            ) : null}
+
+            {activeView === 'cart-page' ? (
+              <Cart
+                cartItems={cartItems}
+                handleRemoveFromCart={handleRemoveFromCart}
+                handleIncreaseQuantity={handleIncreaseQuantity}
+                cartTotal={cartTotal}
+                setActiveView={handleSetActiveView}
+                handleCheckout={handleCheckout}
+              />
+>>>>>>> fbf78de (add buttons for admin roles to add edit and delete books)
             ) : null}
 
             {activeView === 'profile' ? (
@@ -2293,6 +2348,7 @@ function App() {
             ) : null}
 
             {activeView === 'book-detail' ? (
+<<<<<<< HEAD
               <main className="book-detail-view">
                 <button
                   type="button"
@@ -2412,12 +2468,24 @@ function App() {
                   </div>
                 </section>
               </main>
+=======
+              <BookDetail
+                activeDetailBook={activeDetailBook}
+                handleAddToCart={handleAddToCart}
+                addingBookId={addingBookId}
+                wishlistBookIds={wishlistBookIds}
+                toggleWishlist={toggleWishlist}
+                detailRecommendations={detailRecommendations}
+                openBookDetail={openBookDetail}
+                setActiveView={handleSetActiveView}
+              />
+>>>>>>> fbf78de (add buttons for admin roles to add edit and delete books)
             ) : null}
 
           </>
         ) : (
           <main className="auth-view">
-            <button type="button" className="back-home-link" onClick={() => setActiveView('home')}>
+            <button type="button" className="back-home-link" onClick={() => handleSetActiveView('home')}>
               Back to home
             </button>
 

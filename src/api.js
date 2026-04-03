@@ -179,6 +179,26 @@ export const updateBookPrice = (token, bookId, price) =>
     body: JSON.stringify({ price }),
   });
 
+export const addBook = (token, bookData) =>
+  request('/api/books', {
+    method: 'POST',
+    ...withAuth(token),
+    body: JSON.stringify(bookData),
+  });
+
+export const updateBook = (token, bookId, bookData) =>
+  request(`/api/books/${bookId}`, {
+    method: 'PUT',
+    ...withAuth(token),
+    body: JSON.stringify(bookData),
+  });
+
+export const deleteBook = (token, bookId) =>
+  request(`/api/books/${bookId}`, {
+    method: 'DELETE',
+    ...withAuth(token),
+  });
+
 export const createAbaPurchase = (token, payload) =>
   request('/api/payments/aba/purchase', {
     method: 'POST',

@@ -1,6 +1,29 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
+import { getBooks, deleteBook } from '../../api';
 
-const AdminDashboard = ({ adminStats, adminStatsLoading, adminStatsError, setActiveView }) => {
+const AdminDashboard = ({ adminStats, adminStatsLoading, adminStatsError, setActiveView, accessToken, withTokenRefresh, showUiMessage, usingMockCatalog }) => {
+  const [books, setBooks] = useState([]);
+  const [booksLoading, setBooksLoading] = useState(true);
+  const [booksError, setBooksError] = useState('');
+
+  useEffect(() => {
+    const loadBooks = async () => {
+      setBooksLoading(true);
+      setBooksError('');
+      try {
+        const data = await getBooks();
+        setBooks(Array.isArray(data) ? data : []);
+      } catch (error) {
+        setBooksError(error.message || 'Could not load books.');
+        setBooks([]);
+      } finally {
+        setBooksLoading(false);
+      }
+    };
+
+    loadBooks();
+  }, []);
+
   const adminStatCards = useMemo(
     () => [
       { label: 'Total Orders', value: adminStats?.totalOrders ?? 0 },
@@ -12,6 +35,43 @@ const AdminDashboard = ({ adminStats, adminStatsLoading, adminStatsError, setAct
     ],
     [adminStats]
   );
+
+  const handleEditBook = (book) => {
+    setActiveView('edit-book', { book });
+  };
+
+  const handleDeleteBook = async (bookId, bookTitle) => {
+    if (!window.confirm(`Are you sure you want to delete "${bookTitle}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    if (usingMockCatalog) {
+      // For mock data, delete locally
+      setBooks(prevBooks => prevBooks.filter(book => book._id !== bookId));
+      showUiMessage('Book deleted successfully!', 'success');
+      return;
+    }
+
+    try {
+      await withTokenRefresh((token) => deleteBook(token, bookId));
+      showUiMessage('Book deleted successfully!', 'success');
+      
+      // Refresh the books list
+      try {
+        const data = await getBooks();
+        setBooks(Array.isArray(data) ? data : []);
+      } catch (refreshError) {
+        // If refresh fails, just remove the book from local state
+        setBooks(prevBooks => prevBooks.filter(book => book._id !== bookId));
+      }
+    } catch (error) {
+      if (error.status === 404) {
+        showUiMessage('Delete functionality not available on this backend. Please contact administrator.', 'error');
+      } else {
+        showUiMessage(error.message || 'Could not delete book.', 'error');
+      }
+    }
+  };
 
   return (
     <main className="admin-dashboard-view fade-in-anim">
@@ -32,7 +92,61 @@ const AdminDashboard = ({ adminStats, adminStatsLoading, adminStatsError, setAct
         ))}
       </div>
 
+      <div className="section-title-row">
+        <h3>Book Management</h3>
+      </div>
+
+      {booksLoading ? <p className="section-note">Loading books...</p> : null}
+      {booksError ? <p className="section-note warning">{booksError}</p> : null}
+
+      {!booksLoading && !booksError && books.length > 0 ? (
+        <div className="books-table-container">
+          <table className="books-table">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Author</th>
+                <th>Genre</th>
+                <th>Price</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {books.map((book) => (
+                <tr key={book._id}>
+                  <td>{book.title}</td>
+                  <td>{book.author}</td>
+                  <td>{book.genre}</td>
+                  <td>${book.price?.toFixed(2)}</td>
+                  <td>
+                    <button
+                      type="button"
+                      className="edit-btn"
+                      onClick={() => handleEditBook(book)}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      className="delete-btn"
+                      onClick={() => handleDeleteBook(book._id, book.title)}
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
+
+      {!booksLoading && !booksError && books.length === 0 ? (
+        <p className="section-note">No books found.</p>
+      ) : null}
+
       <div className="profile-actions">
+        <button type="button" onClick={() => setActiveView('add-book')}>Add New Book</button>
         <button type="button" onClick={() => setActiveView('home')}>Back to Home</button>
       </div>
     </main>
