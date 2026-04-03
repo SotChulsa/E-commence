@@ -106,6 +106,24 @@ export const changeMyPassword = (token, payload) =>
     body: JSON.stringify(payload || {}),
   });
 
+export const getMySubscription = (token) =>
+  request('/api/users/subscription', {
+    ...withAuth(token),
+  });
+
+export const selectSubscriptionPlan = (token, planOrPayload) => {
+  const payload =
+    typeof planOrPayload === 'string'
+      ? { plan: planOrPayload }
+      : (planOrPayload || {});
+
+  return request('/api/users/subscription/select', {
+    method: 'POST',
+    ...withAuth(token),
+    body: JSON.stringify(payload),
+  });
+};
+
 export const getMyWishlist = (token) =>
   request('/api/users/wishlist', {
     ...withAuth(token),

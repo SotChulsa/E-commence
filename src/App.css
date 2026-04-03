@@ -3,6 +3,443 @@
   animation: fadeIn 0.7s cubic-bezier(.4,2,.6,1);
 }
 
+.plan-nav-btn {
+  border: 1px solid #d7dae5;
+  border-radius: 999px;
+  padding: 8px 14px;
+  background: #f8f9fc;
+  font-weight: 600;
+}
+
+.plan-nav-btn.active {
+  background: #0f1116;
+  border-color: #0f1116;
+  color: #fff;
+}
+
+.plans-view {
+  display: grid;
+  gap: 22px;
+}
+
+.plans-header-block {
+  text-align: center;
+  max-width: 680px;
+  margin: 0 auto;
+  padding-top: 4px;
+}
+
+.plans-header-block h1 {
+  margin: 0;
+  font-size: clamp(34px, 3.8vw, 52px);
+  font-weight: 600;
+}
+
+.plans-header-block p {
+  margin: 8px 0 0;
+  color: #5f636f;
+  font-size: 16px;
+}
+
+.plans-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+.plan-card {
+  position: relative;
+  border-radius: 16px;
+  border: 1px solid #dcdfeb;
+  background: #f9fafc;
+  padding: 18px 16px 14px;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 12px;
+  min-height: 360px;
+  transition: transform 0.24s ease, box-shadow 0.24s ease, border-color 0.24s ease;
+}
+
+.plan-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 14px 24px rgba(15, 16, 22, 0.12);
+}
+
+.plan-card.popular {
+  border: 2px solid #111319;
+  box-shadow: 0 14px 24px rgba(17, 18, 24, 0.1);
+}
+
+.plan-card.popular:hover {
+  box-shadow: 0 20px 30px rgba(14, 16, 24, 0.2);
+}
+
+.plan-card.current {
+  border-color: #67b06d;
+  background: #f8fdf8;
+}
+
+.plan-badge {
+  position: absolute;
+  top: -11px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.plan-badge.current {
+  background: #4ea75a;
+  color: #fff;
+}
+
+.plan-badge.popular {
+  background: #111319;
+  color: #fff;
+}
+
+.plan-card-header h2 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.plan-price {
+  margin: 6px 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.plan-price strong {
+  font-size: 40px;
+  line-height: 1;
+}
+
+.plan-price span {
+  color: #5f636f;
+  font-size: 14px;
+  padding-bottom: 4px;
+}
+
+.plan-subtitle {
+  margin: 0;
+  color: #5a5f6b;
+  font-size: 15px;
+}
+
+.plan-feature-list {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 7px;
+  color: #21242e;
+  font-size: 15px;
+}
+
+.plan-action-btn {
+  border: none;
+  border-radius: 10px;
+  min-height: 40px;
+  background: #0d0f15;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.plan-action-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 9px 16px rgba(12, 14, 20, 0.3);
+  background: #11141d;
+}
+
+.plan-action-btn.current {
+  background: #dfe6df;
+  color: #485248;
+  cursor: not-allowed;
+}
+
+.plan-action-btn:disabled {
+  opacity: 0.9;
+}
+
+.profile-plan-chip {
+  margin-top: 4px;
+  display: inline-flex;
+  align-self: center;
+  border-radius: 999px;
+  border: 1px solid #cbcfdb;
+  padding: 5px 10px;
+  font-size: 13px;
+  color: #414756;
+}
+
+.plan-payment-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 12, 18, 0.52);
+  z-index: 95;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+}
+
+.plan-payment-modal {
+  width: min(500px, 100%);
+  background: #fff;
+  border: 1px solid #e3e6ee;
+  border-radius: 18px;
+  padding: 18px 18px 14px;
+  display: grid;
+  gap: 12px;
+  box-shadow: 0 26px 48px rgba(12, 16, 25, 0.28);
+  position: relative;
+  max-height: calc(100vh - 36px);
+  overflow-y: auto;
+}
+
+.plan-payment-modal h3 {
+  margin: 0;
+  font-size: clamp(18px, 2.2vw, 32px);
+  line-height: 1.05;
+}
+
+.plan-payment-modal p {
+  margin: 0;
+  color: #404554;
+}
+
+.plan-payment-subtitle {
+  color: #6a7080;
+  font-size: 13px;
+  max-width: 620px;
+}
+
+.plan-payment-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  border: none;
+  background: transparent;
+  color: #5d6372;
+  font-size: 30px;
+  line-height: 1;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.plan-payment-close:hover:not(:disabled) {
+  background: #f0f2f7;
+}
+
+.plan-payment-close:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.plan-payment-qr-wrap {
+  width: min(280px, 100%);
+  height: min(280px, 62vw);
+  min-height: 150px;
+  margin: 2px auto 0;
+  border-radius: 14px;
+  background: #f5f5f7;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.plan-payment-ref {
+  justify-self: center;
+  font-size: 13px;
+  color: #596073;
+  background: #f2f4f8;
+  border: 1px solid #dde2ee;
+  border-radius: 8px;
+  padding: 7px 10px;
+  word-break: break-all;
+}
+
+.plan-payment-qr {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  justify-self: center;
+}
+
+.plan-payment-qr-placeholder {
+  color: #8d93a3;
+  font-size: 24px;
+  font-weight: 500;
+  text-align: center;
+  padding: 18px;
+}
+
+.plan-payment-link {
+  display: inline-flex;
+  justify-self: start;
+  align-items: center;
+  text-decoration: none;
+  background: #10131b;
+  color: #fff;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-weight: 600;
+}
+
+.plan-payment-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  font-size: 12px;
+  background: #f2f4f8;
+  border: 1px solid #d9ddea;
+  border-radius: 8px;
+  padding: 10px;
+  word-break: break-all;
+}
+
+.plan-payment-amount {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  margin-top: 0;
+}
+
+.plan-payment-amount span {
+  color: #656b79;
+  font-size: 13px;
+}
+
+.plan-payment-amount strong {
+  font-size: clamp(26px, 5.3vw, 40px);
+  line-height: 1;
+}
+
+.plan-payment-amount small {
+  color: #656b79;
+  font-size: 13px;
+}
+
+.plan-payment-timer {
+  margin: 0;
+  text-align: center;
+  font-size: 13px;
+  color: #2f7a4e;
+  font-weight: 600;
+}
+
+.plan-payment-timer.expired {
+  color: #b23b3b;
+}
+
+.plan-payment-actions {
+  display: grid;
+  gap: 8px;
+  margin-top: 0;
+}
+
+.plan-payment-actions button {
+  border: 2px solid #d7dbe6;
+  border-radius: 11px;
+  min-height: 44px;
+  padding: 0 16px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.plan-payment-actions button:last-child {
+  background: #fff;
+  color: #1f2634;
+}
+
+.plan-payment-actions button:first-child {
+  border-color: #070b13;
+  background: #070b13;
+  color: #fff;
+}
+
+.plan-payment-actions button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+@media (max-width: 760px) {
+  .plan-payment-modal {
+    padding: 12px 10px 10px;
+    border-radius: 14px;
+    gap: 8px;
+  }
+
+  .plan-payment-modal h3 {
+    font-size: clamp(16px, 6vw, 24px);
+    padding-right: 36px;
+  }
+
+  .plan-payment-subtitle {
+    font-size: 12px;
+  }
+
+  .plan-payment-close {
+    top: 8px;
+    right: 8px;
+    font-size: 26px;
+    width: 34px;
+    height: 34px;
+  }
+
+  .plan-payment-qr-wrap {
+    border-radius: 12px;
+    height: min(240px, 58vw);
+  }
+
+  .plan-payment-qr-placeholder {
+    font-size: 26px;
+  }
+
+  .plan-payment-amount span,
+  .plan-payment-amount small {
+    font-size: 12px;
+  }
+
+  .plan-payment-amount strong {
+    font-size: clamp(24px, 8.6vw, 38px);
+  }
+
+  .plan-payment-actions button {
+    min-height: 40px;
+    border-radius: 10px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 840px) {
+  .plans-header-block h1 {
+    font-size: clamp(30px, 8vw, 40px);
+  }
+
+  .plans-header-block p {
+    font-size: 15px;
+  }
+
+  .plan-card {
+    min-height: 0;
+    padding: 16px 14px 12px;
+  }
+
+  .plan-price strong {
+    font-size: 34px;
+  }
+
+  .plan-card-header h2 {
+    font-size: 20px;
+  }
+}
+
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -473,7 +910,7 @@ select {
   line-height: 1.2;
   font-weight: 500;
   display: -webkit-box;
-  line-clamp: 2;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   min-height: 38px;
@@ -485,7 +922,6 @@ select {
   font-size: 13px;
   display: -webkit-box;
   -webkit-line-clamp: 1;
-  line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
   min-height: 16px;
