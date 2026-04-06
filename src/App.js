@@ -2,9 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import CheckoutModal from './components/CheckoutModal';
 import AdminDashboard from './pages/admin-dashboard/AdminDashboard';
 import AddBook from './pages/add-book/AddBook';
-import Home from './pages/home/Home';
 import Cart from './pages/cart/cart';
-import Profile from './pages/profile/profile';
 import BookDetail from './pages/book-detail/BookDetail';
 import './App.css';
 import profile from './profile.svg';
@@ -842,18 +840,6 @@ function App() {
     return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
   }, [planPaymentSecondsLeft]);
 
-  const adminStatCards = useMemo(
-    () => [
-      { label: 'Total Orders', value: adminStats?.totalOrders ?? 0 },
-      { label: 'New Orders', value: adminStats?.newOrders ?? 0 },
-      { label: 'Delivered', value: adminStats?.deliveredOrders ?? 0 },
-      { label: 'Cancelled', value: adminStats?.cancelledOrders ?? 0 },
-      { label: 'Books', value: adminStats?.totalBooks ?? 0 },
-      { label: 'Users', value: adminStats?.totalUsers ?? 0 },
-    ],
-    [adminStats]
-  );
-
   const clearStatus = () => {
     setAuthError('');
     setAuthMessage('');
@@ -1309,7 +1295,7 @@ function App() {
     } catch (error) {
       showUiMessage(error.message || 'Could not update wishlist.', 'error');
     }
-  }, [accessToken, wishlistBookIds, withTokenRefresh]);
+  }, [accessToken, openAuth, wishlistBookIds, withTokenRefresh]);
 
   const handleSignIn = async () => {
     if (!email || !password) {
