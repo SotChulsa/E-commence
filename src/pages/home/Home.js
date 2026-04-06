@@ -123,6 +123,8 @@ const Home = ({
   topSellers,
   recommended,
   trendingBooks,
+  bestSellers,
+  newArrivals,
   uiMessage,
   uiMessageType,
   user,
@@ -271,7 +273,7 @@ const Home = ({
 
       <BookCarousel
         title="New Arrivals"
-        books={books.slice(0, 12)} // Show first 12 books as new arrivals
+        books={newArrivals}
         openBookDetail={openBookDetail}
         handleAddToCart={handleAddToCart}
         addingBookId={addingBookId}
@@ -286,7 +288,7 @@ const Home = ({
 
       <BookCarousel
         title="Bestsellers"
-        books={books.slice(4, 16)} // Show books 5-16 as bestsellers
+        books={bestSellers}
         openBookDetail={openBookDetail}
         handleAddToCart={handleAddToCart}
         addingBookId={addingBookId}

@@ -89,6 +89,52 @@
   grid-column: 1 / -1;
 }
 
+.feature-tags-block {
+  display: grid;
+  gap: 8px;
+}
+
+.feature-tags-block > span {
+  font-size: 13px;
+  color: #444a5b;
+  font-weight: 600;
+}
+
+.feature-tags-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 8px;
+}
+
+.feature-tag-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  border: 1px solid #cfd5e2;
+  border-radius: 10px;
+  padding: 0 10px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.feature-tag-item input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+}
+
+.feature-tag-item span {
+  font-size: 13px;
+  color: #2d3343;
+  font-weight: 500;
+}
+
+.feature-tag-item.active {
+  border-color: #2f5ea8;
+  background: #edf2ff;
+}
+
 .add-book-preview-row {
   display: grid;
   grid-template-columns: 120px 1fr;

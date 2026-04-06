@@ -2,6 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { addBook, updateBook } from '../../api';
 import './AddBook.css';
 
+const FEATURE_TAG_OPTIONS = [
+  { key: 'trending', label: 'Trending' },
+  { key: 'topSeller', label: 'Top Seller' },
+  { key: 'bestSeller', label: 'Best Seller' },
+  { key: 'recommended', label: 'Recommended For You' },
+  { key: 'newArrival', label: 'New Arrival' },
+];
+
 const AddBook = ({ setActiveView, accessToken, withTokenRefresh, showUiMessage, editBook }) => {
   const [title, setTitle] = useState('');
   const [author, setAuthor] = useState('');
@@ -9,6 +17,7 @@ const AddBook = ({ setActiveView, accessToken, withTokenRefresh, showUiMessage, 
   const [price, setPrice] = useState('');
   const [genre, setGenre] = useState('');
   const [image, setImage] = useState('');
+  const [featureTags, setFeatureTags] = useState([]);
   const [saving, setSaving] = useState(false);
 
   const isEditing = !!editBook;
@@ -21,8 +30,15 @@ const AddBook = ({ setActiveView, accessToken, withTokenRefresh, showUiMessage, 
       setPrice(editBook.price?.toString() || '');
       setGenre(editBook.genre || '');
       setImage(editBook.image || '');
+      setFeatureTags(Array.isArray(editBook.featureTags) ? editBook.featureTags : []);
     }
   }, [isEditing, editBook]);
+
+  const toggleFeatureTag = (tag) => {
+    setFeatureTags((current) => (
+      current.includes(tag) ? [] : [tag]
+    ));
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -47,6 +63,7 @@ const AddBook = ({ setActiveView, accessToken, withTokenRefresh, showUiMessage, 
         price: priceNum,
         genre,
         image: image || '',
+        featureTags,
       };
 
       if (isEditing) {
@@ -160,6 +177,26 @@ const AddBook = ({ setActiveView, accessToken, withTokenRefresh, showUiMessage, 
               onChange={(event) => setImage(event.target.value)}
             />
           </label>
+
+          <div className="full-width feature-tags-block">
+            <span>Homepage Placement</span>
+            <div className="feature-tags-grid">
+              {FEATURE_TAG_OPTIONS.map((option) => {
+                const isChecked = featureTags.includes(option.key);
+                return (
+                  <label key={option.key} className={`feature-tag-item ${isChecked ? 'active' : ''}`}>
+                    <input
+                      type="radio"
+                      name="homepagePlacement"
+                      checked={isChecked}
+                      onChange={() => toggleFeatureTag(option.key)}
+                    />
+                    <span>{option.label}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
         <div className="add-book-preview-row">

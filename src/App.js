@@ -169,6 +169,14 @@ const PLAN_CARDS = [
 
 const PLAN_PAYMENT_TTL_SECONDS = 300;
 
+const BOOK_FEATURE_TAGS = {
+  trending: 'trending',
+  topSeller: 'topSeller',
+  bestSeller: 'bestSeller',
+  recommended: 'recommended',
+  newArrival: 'newArrival',
+};
+
 const toCurrency = (value) => {
   if (typeof value !== 'number') {
     return 'Price unavailable';
@@ -757,13 +765,16 @@ function App() {
 
   const featuredBooks = useMemo(() => {
     const catalog = usingMockCatalog || books.length === 0 ? MOCK_BOOKS : books;
+    const usedIds = new Set();
 
-    return FEATURED_TITLES.map((title, index) => {
+    const curated = FEATURED_TITLES.map((title, index) => {
       const lowerTitle = title.toLowerCase();
       const matched = catalog.find((book) => (book.title || '').toLowerCase() === lowerTitle);
       const fallback = FEATURED_FALLBACKS[lowerTitle] || {};
 
       if (matched) {
+        const id = matched?._id || `${title}-${index}`;
+        usedIds.add(String(id));
         return {
           ...matched,
           image: matched.image || fallback.image || '',
@@ -785,16 +796,32 @@ function App() {
 
       return null;
     }).filter(Boolean);
+
+    // If curated titles are missing in live backend data, fill with other catalog books
+    // so the header carousel always rotates through multiple items.
+    const fillers = catalog
+      .filter((book) => {
+        const id = String(book?._id || '');
+        if (!id || usedIds.has(id)) {
+          return false;
+        }
+        usedIds.add(id);
+        return true;
+      })
+      .slice(0, Math.max(0, 6 - curated.length));
+
+    const result = [...curated, ...fillers];
+    return result.length > 0 ? result : MOCK_BOOKS.slice(0, 4);
   }, [books, usingMockCatalog]);
 
   useEffect(() => {
-    if (featuredBooks.length === 0) {
+    if (featuredBooks.length <= 1) {
       return;
     }
 
     const interval = setInterval(() => {
       setFeaturedIndex((current) => (current + 1) % featuredBooks.length);
-    }, 5000);
+    }, 3500);
 
     return () => clearInterval(interval);
   }, [featuredBooks]);
@@ -822,10 +849,45 @@ function App() {
     });
   }, [featuredBooks, filteredBooks]);
 
-  const trendingBook = featuredBooks[featuredIndex] || trendingBooks[0] || filteredBooks[0] || MOCK_BOOKS[0];
-  const topSellers = filteredBooks.slice(0, 4);
-  const recommended =
-    filteredBooks.slice(4, 8).length > 0 ? filteredBooks.slice(4, 8) : filteredBooks.slice(0, 4);
+  const booksByFeatureTag = useMemo(() => {
+    const getPrimaryTag = (book) => {
+      const tags = Array.isArray(book?.featureTags) ? book.featureTags : [];
+      const valid = tags.find((tag) => Object.values(BOOK_FEATURE_TAGS).includes(tag));
+      return valid || '';
+    };
+
+    const build = (tag) => filteredBooks.filter((book) => getPrimaryTag(book) === tag);
+
+    return {
+      trending: build(BOOK_FEATURE_TAGS.trending),
+      topSeller: build(BOOK_FEATURE_TAGS.topSeller),
+      bestSeller: build(BOOK_FEATURE_TAGS.bestSeller),
+      recommended: build(BOOK_FEATURE_TAGS.recommended),
+      newArrival: build(BOOK_FEATURE_TAGS.newArrival),
+    };
+  }, [filteredBooks]);
+
+  const trendingList = booksByFeatureTag.trending.length > 0
+    ? booksByFeatureTag.trending
+    : trendingBooks;
+
+  const topSellers = booksByFeatureTag.topSeller.length > 0
+    ? booksByFeatureTag.topSeller
+    : filteredBooks.slice(0, 8);
+
+  const bestSellers = booksByFeatureTag.bestSeller.length > 0
+    ? booksByFeatureTag.bestSeller
+    : filteredBooks.slice(4, 12);
+
+  const recommended = booksByFeatureTag.recommended.length > 0
+    ? booksByFeatureTag.recommended
+    : (filteredBooks.slice(4, 12).length > 0 ? filteredBooks.slice(4, 12) : filteredBooks.slice(0, 8));
+
+  const newArrivals = booksByFeatureTag.newArrival.length > 0
+    ? booksByFeatureTag.newArrival
+    : filteredBooks.slice(0, 12);
+
+  const trendingBook = featuredBooks[featuredIndex] || trendingList[0] || filteredBooks[0] || MOCK_BOOKS[0];
   const activeDetailBook = selectedBook || trendingBook;
   const detailRecommendations = useMemo(() => {
     const catalog = filteredBooks.length > 0 ? filteredBooks : books;
@@ -1784,7 +1846,9 @@ function App() {
                 books={books}
                 topSellers={topSellers}
                 recommended={recommended}
-                trendingBooks={trendingBooks}
+                trendingBooks={trendingList}
+                bestSellers={bestSellers}
+                newArrivals={newArrivals}
                 uiMessage={uiMessage}
                 uiMessageType={uiMessageType}
                 user={user}

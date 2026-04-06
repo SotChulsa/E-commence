@@ -107,6 +107,7 @@ const AdminDashboard = ({ adminStats, adminStatsLoading, adminStatsError, setAct
                 <th>Author</th>
                 <th>Genre</th>
                 <th>Price</th>
+                <th>Placement</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -117,6 +118,11 @@ const AdminDashboard = ({ adminStats, adminStatsLoading, adminStatsError, setAct
                   <td>{book.author}</td>
                   <td>{book.genre}</td>
                   <td>${book.price?.toFixed(2)}</td>
+                  <td>
+                    {Array.isArray(book.featureTags) && book.featureTags.length > 0
+                      ? book.featureTags[0]
+                      : 'Default'}
+                  </td>
                   <td>
                     <button
                       type="button"

@@ -514,7 +514,8 @@ select {
   min-height: 100vh;
   padding: 16px 22px 32px;
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: visible;
 }
 
 .app-header {
