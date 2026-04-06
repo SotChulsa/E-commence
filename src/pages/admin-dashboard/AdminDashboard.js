@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { getBooks, deleteBook } from '../../api';
 
-const AdminDashboard = ({ adminStats, adminStatsLoading, adminStatsError, setActiveView, accessToken, withTokenRefresh, showUiMessage, usingMockCatalog }) => {
+const AdminDashboard = ({ adminStats, adminStatsLoading, adminStatsError, setActiveView, accessToken, withTokenRefresh, showUiMessage, usingMockCatalog, onBookDeleted }) => {
   const [books, setBooks] = useState([]);
   const [booksLoading, setBooksLoading] = useState(true);
   const [booksError, setBooksError] = useState('');
@@ -46,24 +46,22 @@ const AdminDashboard = ({ adminStats, adminStatsLoading, adminStatsError, setAct
     }
 
     if (usingMockCatalog) {
-      // For mock data, delete locally
+      // For mock data, delete locally and update global app state
       setBooks(prevBooks => prevBooks.filter(book => book._id !== bookId));
+      if (onBookDeleted) {
+        onBookDeleted(bookId);
+      }
       showUiMessage('Book deleted successfully!', 'success');
       return;
     }
 
     try {
       await withTokenRefresh((token) => deleteBook(token, bookId));
-      showUiMessage('Book deleted successfully!', 'success');
-      
-      // Refresh the books list
-      try {
-        const data = await getBooks();
-        setBooks(Array.isArray(data) ? data : []);
-      } catch (refreshError) {
-        // If refresh fails, just remove the book from local state
-        setBooks(prevBooks => prevBooks.filter(book => book._id !== bookId));
+      setBooks(prevBooks => prevBooks.filter(book => book._id !== bookId));
+      if (onBookDeleted) {
+        await onBookDeleted(bookId);
       }
+      showUiMessage('Book deleted successfully!', 'success');
     } catch (error) {
       if (error.status === 404) {
         showUiMessage('Delete functionality not available on this backend. Please contact administrator.', 'error');

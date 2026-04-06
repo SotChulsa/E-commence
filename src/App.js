@@ -4,6 +4,7 @@ import AdminDashboard from './pages/admin-dashboard/AdminDashboard';
 import AddBook from './pages/add-book/AddBook';
 import Cart from './pages/cart/cart';
 import BookDetail from './pages/book-detail/BookDetail';
+import Home from './pages/home/Home';
 import './App.css';
 import profile from './profile.svg';
 import heart from './heart.svg';
@@ -360,6 +361,36 @@ function App() {
 
     loadBooks();
   }, []);
+
+  const refreshCatalog = useCallback(async () => {
+    setBooksLoading(true);
+    setBooksError('');
+
+    try {
+      const data = await getBooks();
+      const list = Array.isArray(data) ? data : [];
+      setBooks(list);
+      setUsingMockCatalog(false);
+    } catch (_error) {
+      setBooks(MOCK_BOOKS);
+      setUsingMockCatalog(true);
+      setBooksError('Using frontend mock catalog until backend is connected.');
+    } finally {
+      setBooksLoading(false);
+    }
+  }, []);
+
+  const handleBookDeleted = useCallback(
+    async (bookId) => {
+      if (usingMockCatalog) {
+        setBooks((current) => current.filter((book) => book._id !== bookId));
+        return;
+      }
+
+      await refreshCatalog();
+    },
+    [refreshCatalog, usingMockCatalog]
+  );
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -741,15 +772,19 @@ function App() {
         };
       }
 
-      return {
-        _id: fallback?._id || `featured-fallback-${index}`,
-        title,
-        author: fallback.author || 'Featured author',
-        description: fallback.description || 'Curated title for today.',
-        price: typeof fallback.price === 'number' ? fallback.price : 19.99,
-        image: fallback.image || '',
-      };
-    });
+      if (usingMockCatalog || books.length === 0) {
+        return {
+          _id: fallback?._id || `featured-fallback-${index}`,
+          title,
+          author: fallback.author || 'Featured author',
+          description: fallback.description || 'Curated title for today.',
+          price: typeof fallback.price === 'number' ? fallback.price : 19.99,
+          image: fallback.image || '',
+        };
+      }
+
+      return null;
+    }).filter(Boolean);
   }, [books, usingMockCatalog]);
 
   useEffect(() => {
@@ -772,7 +807,22 @@ function App() {
     setFeaturedIndex(0);
   }, [featuredBooks, featuredIndex]);
 
-  const trendingBook = featuredBooks[featuredIndex] || filteredBooks[0] || MOCK_BOOKS[0];
+  const trendingBooks = useMemo(() => {
+    const candidates = [...featuredBooks, ...filteredBooks.slice(8, 20)];
+    const seen = new Set();
+
+    return candidates.filter((book) => {
+      const id = book?._id || (book?.title || '').toLowerCase();
+      if (!id || seen.has(id)) {
+        return false;
+      }
+
+      seen.add(id);
+      return true;
+    });
+  }, [featuredBooks, filteredBooks]);
+
+  const trendingBook = featuredBooks[featuredIndex] || trendingBooks[0] || filteredBooks[0] || MOCK_BOOKS[0];
   const topSellers = filteredBooks.slice(0, 4);
   const recommended =
     filteredBooks.slice(4, 8).length > 0 ? filteredBooks.slice(4, 8) : filteredBooks.slice(0, 4);
@@ -840,12 +890,6 @@ function App() {
     return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
   }, [planPaymentSecondsLeft]);
 
-  const clearStatus = () => {
-    setAuthError('');
-    setAuthMessage('');
-    setUiMessage('');
-  };
-
   useEffect(() => {
     if (!uiMessage || uiMessageType === 'loading') {
       return;
@@ -870,12 +914,14 @@ function App() {
     return () => clearInterval(timer);
   }, [planPayment?.isOpen]);
 
-  const openAuth = (mode = 'signin') => {
-    clearStatus();
+  const openAuth = useCallback((mode = 'signin') => {
+    setAuthError('');
+    setAuthMessage('');
+    setUiMessage('');
     setAuthMode(mode);
     setActiveView('auth');
     setIsDrawerOpen(false);
-  };
+  }, []);
 
   const openProfileView = () => {
     if (!user) {
@@ -1704,132 +1750,35 @@ function App() {
             </header>
 
             {activeView === 'home' ? (
-              <main className="home-view fade-in-anim">
-                <section
-                  className="hero-panel clickable"
-                  onClick={() => openBookDetail(trendingBook)}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' || event.key === ' ') {
-                      event.preventDefault();
-                      openBookDetail(trendingBook);
-                    }
-                  }}
-                  aria-label={`Open details for ${trendingBook?.title || 'featured book'}`}
-                >
-                  {trendingBook?.image ? (
-                    <img
-                      key={`hero-image-${trendingBook?._id || featuredIndex}`}
-                      className="hero-img-anim"
-                      src={trendingBook.image}
-                      alt={trendingBook?.title || 'Featured book'}
-                    />
-                  ) : (
-                    <div className="hero-image-placeholder" aria-hidden="true" />
-                  )}
-                  <div key={`hero-content-${trendingBook?._id || featuredIndex}`} className="hero-content">
-                    <span className="featured-badge hero-stagger hero-stagger-0">Featured Book</span>
-                    <h2 className="hero-stagger hero-stagger-1">{trendingBook?.title || 'Book Spotlight'}</h2>
-                    <p className="hero-author hero-stagger hero-stagger-2">by {trendingBook?.author || 'Unknown author'}</p>
-                    <p className="hero-stagger hero-stagger-3">{trendingBook?.description || 'Curated title for today.'}</p>
-                    <div className="hero-actions hero-stagger hero-stagger-4">
-                      <strong>{toCurrency(trendingBook?.price)}</strong>
-                      <button
-                        className="animated-btn hero-cart-btn"
-                        type="button"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          handleAddToCart(trendingBook?._id);
-                        }}
-                        disabled={addingBookId === trendingBook?._id}
-                      >
-                        {addingBookId === trendingBook?._id ? 'Adding...' : 'Add to Cart'}
-                      </button>
-                      <button
-                        className={`wishlist-btn ${wishlistBookIds.includes(trendingBook?._id) ? 'active' : ''}`}
-                        type="button"
-                        aria-label={wishlistBookIds.includes(trendingBook?._id) ? 'Remove from wishlist' : 'Add to wishlist'}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          toggleWishlist(trendingBook?._id);
-                        }}
-                      >
-                        <span className="heart-glyph" aria-hidden="true">♡</span>
-                      </button>
-                    </div>
-                    <div className="hero-dots" role="tablist" aria-label="Featured book navigation">
-                      {featuredBooks.map((book, index) => {
-                        const isActive = index === featuredIndex;
-                        return (
-                          <button
-                            key={book._id || `${book.title}-${index}`}
-                            type="button"
-                            role="tab"
-                            className={`hero-dot ${isActive ? 'active' : ''}`}
-                            aria-selected={isActive}
-                            aria-label={`Show ${book.title || 'featured book'}`}
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              setFeaturedIndex(index);
-                            }}
-                          />
-                        );
-                      })}
-                    </div>
-                  </div>
-                </section>
-
-                <section className="category-row" aria-label="Book categories">
-                  {categoryTabs.map((tab) => (
-                    <button
-                      key={tab.label}
-                      type="button"
-                      className={`category-pill ${selectedCategoryTab === tab.label ? 'active' : ''}`}
-                      onClick={() => {
-                        setSelectedCategoryTab(tab.label);
-                        setSelectedGenre(tab.genre);
-                      }}
-                    >
-                      {tab.label}
-                    </button>
-                  ))}
-                </section>
-
-                <section className="books-section">
-                  <div className="section-title-row">
-                    <h3>Top Seller</h3>
-                  </div>
-
-                  <div className="books-grid fade-in-anim">
-                    {booksLoading ? <p className="section-note">Loading books...</p> : null}
-                    {booksError ? <p className="section-note warning">{booksError}</p> : null}
-                    {!booksLoading && !usingMockCatalog && books.length === 0 ? (
-                      <p className="section-note warning">No books in backend yet. Create books first to enable Add to Cart.</p>
-                    ) : null}
-                    {!booksLoading && topSellers.length === 0 ? (
-                      <p className="section-note">No books found for this filter.</p>
-                    ) : null}
-                    {!booksLoading ? topSellers.map(renderBookCard) : null}
-                  </div>
-                </section>
-
-                <section className="books-section">
-                  <div className="section-title-row">
-                    <h3>Recommended For You</h3>
-                  </div>
-                  <div className="books-grid fade-in-anim">
-                    {!booksLoading ? recommended.map(renderBookCard) : null}
-                  </div>
-                </section>
-
-                {uiMessage ? (
-                  <div className={`floating-message ${uiMessageType}`} role="status" aria-live="polite">
-                    <span className="toast-indicator" aria-hidden="true" />
-                    <span>{uiMessage}</span>
-                  </div>
-                ) : null}
-              </main>
+              <Home
+                trendingBook={trendingBook}
+                openBookDetail={openBookDetail}
+                featuredBooks={featuredBooks}
+                featuredIndex={featuredIndex}
+                setFeaturedIndex={setFeaturedIndex}
+                wishlistBookIds={wishlistBookIds}
+                toggleWishlist={toggleWishlist}
+                handleAddToCart={handleAddToCart}
+                addingBookId={addingBookId}
+                categoryTabs={categoryTabs}
+                selectedCategoryTab={selectedCategoryTab}
+                setSelectedCategoryTab={setSelectedCategoryTab}
+                setSelectedGenre={setSelectedGenre}
+                booksLoading={booksLoading}
+                booksError={booksError}
+                usingMockCatalog={usingMockCatalog}
+                books={books}
+                topSellers={topSellers}
+                recommended={recommended}
+                trendingBooks={trendingBooks}
+                uiMessage={uiMessage}
+                uiMessageType={uiMessageType}
+                user={user}
+                priceDrafts={priceDrafts}
+                setPriceDrafts={setPriceDrafts}
+                handleUpdateBookPrice={handleUpdateBookPrice}
+                updatingPriceBookId={updatingPriceBookId}
+              />
             ) : null}
 
             {activeView === 'plans' ? (
@@ -1904,6 +1853,7 @@ function App() {
                 withTokenRefresh={withTokenRefresh}
                 showUiMessage={showUiMessage}
                 usingMockCatalog={usingMockCatalog}
+                onBookDeleted={handleBookDeleted}
               />
             ) : null}
 

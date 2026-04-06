@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import BookCard from '../../components/BookCard';
 
 const toCurrency = (value) => {
@@ -10,6 +10,96 @@ const toCurrency = (value) => {
     style: 'currency',
     currency: 'USD',
   }).format(value);
+};
+
+const BookCarousel = ({
+  title,
+  books,
+  openBookDetail,
+  handleAddToCart,
+  addingBookId,
+  wishlistBookIds,
+  toggleWishlist,
+  user,
+  priceDrafts,
+  setPriceDrafts,
+  handleUpdateBookPrice,
+  updatingPriceBookId,
+  booksPerView = 4
+}) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const nextSlide = () => {
+    setCurrentIndex((prevIndex) =>
+      prevIndex + booksPerView >= books.length ? 0 : prevIndex + booksPerView
+    );
+  };
+
+  const prevSlide = () => {
+    setCurrentIndex((prevIndex) =>
+      prevIndex - booksPerView < 0 ? Math.max(0, books.length - booksPerView) : prevIndex - booksPerView
+    );
+  };
+
+  const totalPages = Math.ceil(books.length / booksPerView);
+  const currentPage = Math.floor(currentIndex / booksPerView) + 1;
+
+  if (books.length === 0) return null;
+
+  return (
+    <section className="books-section">
+      <div className="section-title-row">
+        <h3>{title}</h3>
+        {books.length > booksPerView && (
+          <div className="carousel-controls">
+            <button
+              type="button"
+              className="carousel-arrow carousel-arrow-prev"
+              onClick={prevSlide}
+              disabled={currentIndex === 0}
+              aria-label="Previous books"
+            >
+              ‹
+            </button>
+            <span className="carousel-page-indicator">
+              {currentPage} / {totalPages}
+            </span>
+            <button
+              type="button"
+              className="carousel-arrow carousel-arrow-next"
+              onClick={nextSlide}
+              disabled={currentIndex + booksPerView >= books.length}
+              aria-label="Next books"
+            >
+              ›
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="books-carousel fade-in-anim">
+        <div className="books-carousel-track" style={{ transform: `translateX(-${currentIndex * (100 / booksPerView)}%)` }}>
+          {books.map((item) => (
+            <div key={item._id} className="book-carousel-item">
+              <BookCard
+                item={item}
+                openBookDetail={openBookDetail}
+                handleAddToCart={handleAddToCart}
+                addingBookId={addingBookId}
+                wishlistBookIds={wishlistBookIds}
+                toggleWishlist={toggleWishlist}
+                user={user}
+                priceDrafts={priceDrafts}
+                setPriceDrafts={setPriceDrafts}
+                handleUpdateBookPrice={handleUpdateBookPrice}
+                updatingPriceBookId={updatingPriceBookId}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
 };
 
 const Home = ({
@@ -32,6 +122,7 @@ const Home = ({
   books,
   topSellers,
   recommended,
+  trendingBooks,
   uiMessage,
   uiMessageType,
   user,
@@ -133,62 +224,80 @@ const Home = ({
         ))}
       </section>
 
-      <section className="books-section">
-        <div className="section-title-row">
-          <h3>Top Seller</h3>
-        </div>
+      <BookCarousel
+        title="Trending Now"
+        books={trendingBooks}
+        openBookDetail={openBookDetail}
+        handleAddToCart={handleAddToCart}
+        addingBookId={addingBookId}
+        wishlistBookIds={wishlistBookIds}
+        toggleWishlist={toggleWishlist}
+        user={user}
+        priceDrafts={priceDrafts}
+        setPriceDrafts={setPriceDrafts}
+        handleUpdateBookPrice={handleUpdateBookPrice}
+        updatingPriceBookId={updatingPriceBookId}
+      />
 
-        <div className="books-grid fade-in-anim">
-          {booksLoading ? <p className="section-note">Loading books...</p> : null}
-          {booksError ? <p className="section-note warning">{booksError}</p> : null}
-          {!booksLoading && !usingMockCatalog && books.length === 0 ? (
-            <p className="section-note warning">No books in backend yet. Create books first to enable Add to Cart.</p>
-          ) : null}
-          {!booksLoading && topSellers.length === 0 ? (
-            <p className="section-note">No books found for this filter.</p>
-          ) : null}
-          {!booksLoading ? topSellers.map((item) => (
-            <BookCard
-              key={item._id}
-              item={item}
-              openBookDetail={openBookDetail}
-              handleAddToCart={handleAddToCart}
-              addingBookId={addingBookId}
-              wishlistBookIds={wishlistBookIds}
-              toggleWishlist={toggleWishlist}
-              user={user}
-              priceDrafts={priceDrafts}
-              setPriceDrafts={setPriceDrafts}
-              handleUpdateBookPrice={handleUpdateBookPrice}
-              updatingPriceBookId={updatingPriceBookId}
-            />
-          )) : null}
-        </div>
-      </section>
+      <BookCarousel
+        title="Top Sellers"
+        books={topSellers}
+        openBookDetail={openBookDetail}
+        handleAddToCart={handleAddToCart}
+        addingBookId={addingBookId}
+        wishlistBookIds={wishlistBookIds}
+        toggleWishlist={toggleWishlist}
+        user={user}
+        priceDrafts={priceDrafts}
+        setPriceDrafts={setPriceDrafts}
+        handleUpdateBookPrice={handleUpdateBookPrice}
+        updatingPriceBookId={updatingPriceBookId}
+      />
 
-      <section className="books-section">
-        <div className="section-title-row">
-          <h3>Recommended For You</h3>
-        </div>
-        <div className="books-grid fade-in-anim">
-          {!booksLoading ? recommended.map((item) => (
-            <BookCard
-              key={item._id}
-              item={item}
-              openBookDetail={openBookDetail}
-              handleAddToCart={handleAddToCart}
-              addingBookId={addingBookId}
-              wishlistBookIds={wishlistBookIds}
-              toggleWishlist={toggleWishlist}
-              user={user}
-              priceDrafts={priceDrafts}
-              setPriceDrafts={setPriceDrafts}
-              handleUpdateBookPrice={handleUpdateBookPrice}
-              updatingPriceBookId={updatingPriceBookId}
-            />
-          )) : null}
-        </div>
-      </section>
+      <BookCarousel
+        title="Recommended For You"
+        books={recommended}
+        openBookDetail={openBookDetail}
+        handleAddToCart={handleAddToCart}
+        addingBookId={addingBookId}
+        wishlistBookIds={wishlistBookIds}
+        toggleWishlist={toggleWishlist}
+        user={user}
+        priceDrafts={priceDrafts}
+        setPriceDrafts={setPriceDrafts}
+        handleUpdateBookPrice={handleUpdateBookPrice}
+        updatingPriceBookId={updatingPriceBookId}
+      />
+
+      <BookCarousel
+        title="New Arrivals"
+        books={books.slice(0, 12)} // Show first 12 books as new arrivals
+        openBookDetail={openBookDetail}
+        handleAddToCart={handleAddToCart}
+        addingBookId={addingBookId}
+        wishlistBookIds={wishlistBookIds}
+        toggleWishlist={toggleWishlist}
+        user={user}
+        priceDrafts={priceDrafts}
+        setPriceDrafts={setPriceDrafts}
+        handleUpdateBookPrice={handleUpdateBookPrice}
+        updatingPriceBookId={updatingPriceBookId}
+      />
+
+      <BookCarousel
+        title="Bestsellers"
+        books={books.slice(4, 16)} // Show books 5-16 as bestsellers
+        openBookDetail={openBookDetail}
+        handleAddToCart={handleAddToCart}
+        addingBookId={addingBookId}
+        wishlistBookIds={wishlistBookIds}
+        toggleWishlist={toggleWishlist}
+        user={user}
+        priceDrafts={priceDrafts}
+        setPriceDrafts={setPriceDrafts}
+        handleUpdateBookPrice={handleUpdateBookPrice}
+        updatingPriceBookId={updatingPriceBookId}
+      />
 
       {uiMessage ? (
         <div className={`floating-message ${uiMessageType}`} role="status" aria-live="polite">
