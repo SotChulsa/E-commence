@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { addBook, updateBook } from '../../api';
+import './AddBook.css';
 
 const AddBook = ({ setActiveView, accessToken, withTokenRefresh, showUiMessage, editBook }) => {
   const [title, setTitle] = useState('');
@@ -65,97 +66,122 @@ const AddBook = ({ setActiveView, accessToken, withTokenRefresh, showUiMessage, 
   };
 
   return (
-    <main className="auth-view">
-      <button
-        type="button"
-        className="back-home-link"
-        onClick={() => setActiveView('admin-dashboard')}
-      >
-        Back to Dashboard
-      </button>
-
-      <div className="auth-panels auth-single">
-        <article className="auth-card">
-          <h3>{isEditing ? 'Edit Book' : 'Add New Book'}</h3>
-          <form onSubmit={handleSubmit}>
-            <label>
-              Title *
-              <input
-                type="text"
-                placeholder="Enter book title"
-                value={title}
-                onChange={(event) => setTitle(event.target.value)}
-                required
-              />
-            </label>
-            <label>
-              Author *
-              <input
-                type="text"
-                placeholder="Enter author name"
-                value={author}
-                onChange={(event) => setAuthor(event.target.value)}
-                required
-              />
-            </label>
-            <label>
-              Description *
-              <textarea
-                placeholder="Enter book description"
-                value={description}
-                onChange={(event) => setDescription(event.target.value)}
-                rows="4"
-                required
-              />
-            </label>
-            <label>
-              Price *
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="Enter price (e.g., 19.99)"
-                value={price}
-                onChange={(event) => setPrice(event.target.value)}
-                required
-              />
-            </label>
-            <label>
-              Genre *
-              <select
-                value={genre}
-                onChange={(event) => setGenre(event.target.value)}
-                required
-              >
-                <option value="">Select genre</option>
-                <option value="Fiction">Fiction</option>
-                <option value="Nonfiction">Nonfiction</option>
-                <option value="Thriller">Thriller</option>
-                <option value="Mystery">Mystery</option>
-                <option value="Romance">Romance</option>
-                <option value="Sci-Fi">Sci-Fi</option>
-                <option value="Fantasy">Fantasy</option>
-                <option value="Biography">Biography</option>
-                <option value="History">History</option>
-                <option value="Self-Help">Self-Help</option>
-                <option value="Other">Other</option>
-              </select>
-            </label>
-            <label>
-              Image URL (optional)
-              <input
-                type="url"
-                placeholder="Enter image URL"
-                value={image}
-                onChange={(event) => setImage(event.target.value)}
-              />
-            </label>
-            <button type="submit" disabled={saving}>
-              {saving ? (isEditing ? 'Updating Book...' : 'Adding Book...') : (isEditing ? 'Update Book' : 'Add Book')}
-            </button>
-          </form>
-        </article>
+    <main className="add-book-view fade-in-anim">
+      <div className="add-book-head">
+        <div>
+          <h2>{isEditing ? 'Edit Book' : 'Add New Book'}</h2>
+          <p>Create a new catalog entry with image URL, pricing, and details.</p>
+        </div>
+        <button
+          type="button"
+          className="add-book-back-btn"
+          onClick={() => setActiveView('admin-dashboard')}
+        >
+          Back to Dashboard
+        </button>
       </div>
+
+      <form className="add-book-form" onSubmit={handleSubmit}>
+        <div className="add-book-grid">
+          <label>
+            <span>Title *</span>
+            <input
+              type="text"
+              placeholder="Enter book title"
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              required
+            />
+          </label>
+
+          <label>
+            <span>Author *</span>
+            <input
+              type="text"
+              placeholder="Enter author name"
+              value={author}
+              onChange={(event) => setAuthor(event.target.value)}
+              required
+            />
+          </label>
+
+          <label>
+            <span>Price *</span>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              placeholder="Enter price (e.g., 19.99)"
+              value={price}
+              onChange={(event) => setPrice(event.target.value)}
+              required
+            />
+          </label>
+
+          <label>
+            <span>Genre *</span>
+            <select
+              value={genre}
+              onChange={(event) => setGenre(event.target.value)}
+              required
+            >
+              <option value="">Select genre</option>
+              <option value="Fiction">Fiction</option>
+              <option value="Nonfiction">Nonfiction</option>
+              <option value="Thriller">Thriller</option>
+              <option value="Mystery">Mystery</option>
+              <option value="Romance">Romance</option>
+              <option value="Sci-Fi">Sci-Fi</option>
+              <option value="Fantasy">Fantasy</option>
+              <option value="Biography">Biography</option>
+              <option value="History">History</option>
+              <option value="Self-Help">Self-Help</option>
+              <option value="Other">Other</option>
+            </select>
+          </label>
+
+          <label className="full-width">
+            <span>Description *</span>
+            <textarea
+              placeholder="Enter book description"
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              rows="4"
+              required
+            />
+          </label>
+
+          <label className="full-width">
+            <span>Image URL</span>
+            <input
+              type="url"
+              placeholder="https://example.com/book-cover.jpg"
+              value={image}
+              onChange={(event) => setImage(event.target.value)}
+            />
+          </label>
+        </div>
+
+        <div className="add-book-preview-row">
+          <div className="add-book-preview-card">
+            {image ? (
+              <img src={image} alt="Book preview" onError={(event) => { event.currentTarget.style.display = 'none'; }} />
+            ) : (
+              <div className="add-book-preview-empty">Image preview</div>
+            )}
+          </div>
+          <p>Tip: Paste any public image URL to use it as the book cover.</p>
+        </div>
+
+        <div className="add-book-actions">
+          <button type="button" className="secondary" onClick={() => setActiveView('admin-dashboard')}>
+            Cancel
+          </button>
+          <button type="submit" disabled={saving}>
+            {saving ? (isEditing ? 'Updating Book...' : 'Adding Book...') : (isEditing ? 'Update Book' : 'Add Book')}
+          </button>
+        </div>
+      </form>
     </main>
   );
 };
