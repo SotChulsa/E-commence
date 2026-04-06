@@ -1,118 +1,194 @@
-/* Container for sidebar + main */
-.dashboard-container {
-  display: flex;
-  min-height: 100vh;
-  background-color: #f3f4f6; /* gray-100 */
-}
-
-/* Main content area */
-.dashboard-main {
-  flex: 1;
-  padding: 24px;
-}
-
-/* Top bar */
-.top-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-}
-
-.dashboard-title {
-  font-size: 2rem;
-  font-weight: bold;
-}
-
-.search-input {
-  padding: 8px 12px;
-  border-radius: 8px;
-  border: 1px solid #d1d5db;
-  background-color: #e5e7eb;
-}
-
-/* Cards layout */
-.cards-grid {
+.admin-dashboard-view {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 24px;
+  gap: 16px;
+  padding: 4px 2px 14px;
 }
 
-/* Single card */
-.card {
-  background-color: #ffffff;
-  padding: 16px;
-  border-radius: 16px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  text-align: center;
+.admin-dashboard-view .section-title-row {
+  margin-top: 4px;
 }
 
-.card h2 {
-  font-size: 1.25rem;
-  margin-bottom: 8px;
+.admin-dashboard-view .section-title-row h3 {
+  margin: 0;
+  font-size: clamp(28px, 3vw, 40px);
+  line-height: 1.1;
+  font-weight: 600;
 }
 
-.card p {
-  font-size: 1.5rem;
-  font-weight: bold;
+.admin-dashboard-view .section-note {
+  margin-top: -6px;
+  color: #5f6270;
+  font-size: 16px;
 }
 
-/* Books table styles */
+.admin-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+.admin-stat-card {
+  background: #fafbfd;
+  border: 1px solid #d8dbe4;
+  border-radius: 12px;
+  padding: 12px 14px;
+  box-shadow: none;
+}
+
+.admin-stat-card h4 {
+  margin: 0;
+  font-size: 14px;
+  color: #666b79;
+  font-weight: 500;
+}
+
+.admin-stat-card p {
+  margin: 14px 0 0;
+  font-size: 34px;
+  line-height: 1;
+  font-weight: 500;
+  color: #151821;
+}
+
 .books-table-container {
-  margin: 20px 0;
+  margin: 0;
   overflow-x: auto;
+  border: 1px solid #d8dbe4;
+  border-radius: 12px;
+  background: #fbfbfc;
 }
 
 .books-table {
   width: 100%;
   border-collapse: collapse;
-  background-color: #ffffff;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  min-width: 860px;
 }
 
-.books-table th,
-.books-table td {
-  padding: 12px 16px;
-  text-align: left;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.books-table th {
-  background-color: #f9fafb;
+.books-table thead th {
+  background: #f1f2f5;
+  color: #444958;
+  font-size: 14px;
   font-weight: 600;
-  color: #374151;
+  padding: 10px 16px;
+  border-bottom: 1px solid #d9dde6;
 }
 
-.books-table tbody tr:hover {
-  background-color: #f9fafb;
+.books-table tbody td {
+  padding: 11px 16px;
+  font-size: 14px;
+  color: #222633;
+  border-bottom: 1px solid #e3e6ed;
+}
+
+.books-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.books-table td:last-child {
+  white-space: nowrap;
 }
 
 .edit-btn,
 .delete-btn {
-  border: none;
-  border-radius: 6px;
-  padding: 6px 12px;
+  border: 1px solid #d2d7e2;
+  border-radius: 8px;
+  padding: 5px 10px;
   cursor: pointer;
-  font-size: 14px;
-  margin-right: 8px;
+  font-size: 13px;
+  margin-right: 6px;
+  background: #f8f9fc;
+  color: #2b3140;
 }
 
-.edit-btn {
-  background-color: #10b981;
-  color: white;
-}
-
-.edit-btn:hover {
-  background-color: #059669;
+.edit-btn:hover,
+.delete-btn:hover {
+  background: #edf0f6;
 }
 
 .delete-btn {
-  background-color: #ef4444;
-  color: white;
+  margin-right: 0;
 }
 
-.delete-btn:hover {
-  background-color: #dc2626;
+.admin-dashboard-view .profile-actions {
+  margin-top: 2px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-dashboard-view .profile-actions button {
+  min-height: 34px;
+  border-radius: 9px;
+  padding: 0 14px;
+  font-size: 13px;
+  border: 1px solid #ced3de;
+}
+
+.admin-dashboard-view .profile-actions button:first-child {
+  background: #0f1117;
+  border-color: #0f1117;
+  color: #fff;
+}
+
+.admin-dashboard-view .profile-actions button:last-child {
+  background: #f8f9fc;
+  color: #222633;
+}
+
+@media (max-width: 1100px) {
+  .admin-stats-grid {
+    grid-template-columns: repeat(3, minmax(120px, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .admin-dashboard-view {
+    gap: 12px;
+    padding-bottom: 8px;
+  }
+
+  .admin-dashboard-view .section-title-row h3 {
+    font-size: clamp(22px, 7vw, 30px);
+  }
+
+  .admin-dashboard-view .section-note {
+    font-size: 14px;
+    margin-top: -4px;
+  }
+
+  .admin-stats-grid {
+    grid-template-columns: repeat(2, minmax(120px, 1fr));
+    gap: 8px;
+  }
+
+  .admin-stat-card h4 {
+    font-size: 13px;
+  }
+
+  .admin-stat-card p {
+    font-size: 32px;
+    margin-top: 10px;
+  }
+
+  .books-table {
+    min-width: 680px;
+  }
+
+  .books-table thead th,
+  .books-table tbody td,
+  .edit-btn,
+  .delete-btn {
+    font-size: 13px;
+  }
+
+  .admin-dashboard-view .profile-actions {
+    display: flex;
+    width: 100%;
+  }
+
+  .admin-dashboard-view .profile-actions button {
+    flex: 1;
+    font-size: 13px;
+    min-height: 38px;
+  }
 }

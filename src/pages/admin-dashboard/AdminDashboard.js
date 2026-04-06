@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { getBooks, deleteBook } from '../../api';
+import './AdminDashboard.css';
 
 const AdminDashboard = ({ adminStats, adminStatsLoading, adminStatsError, setActiveView, accessToken, withTokenRefresh, showUiMessage, usingMockCatalog, onBookDeleted }) => {
   const [books, setBooks] = useState([]);
