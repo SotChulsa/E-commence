@@ -172,12 +172,62 @@ export const getMyOrders = (token) =>
     ...withAuth(token),
   });
 
-export const updateBookPrice = (token, bookId, price) =>
-  request(`/api/books/${bookId}/price`, {
-    method: 'PATCH',
+const normalizeBookPayload = (payload) => {
+  if (!payload) {
+    return payload;
+  }
+
+  if (payload.book) {
+    return payload.book;
+  }
+
+  if (payload.data?.book) {
+    return payload.data.book;
+  }
+
+  if (payload.updatedBook) {
+    return payload.updatedBook;
+  }
+
+  return payload;
+};
+
+export const updateBookPrice = async (token, bookId, price) => {
+  const payload = JSON.stringify({ price });
+
+  try {
+    const data = await request(`/api/books/${bookId}/price`, {
+      method: 'PATCH',
+      ...withAuth(token),
+      body: payload,
+    });
+    return normalizeBookPayload(data);
+  } catch (error) {
+    if (error.status !== 404) {
+      throw error;
+    }
+  }
+
+  try {
+    const data = await request(`/api/books/${bookId}`, {
+      method: 'PATCH',
+      ...withAuth(token),
+      body: payload,
+    });
+    return normalizeBookPayload(data);
+  } catch (error) {
+    if (error.status !== 404) {
+      throw error;
+    }
+  }
+
+  const data = await request(`/api/books/${bookId}`, {
+    method: 'PUT',
     ...withAuth(token),
-    body: JSON.stringify({ price }),
+    body: payload,
   });
+  return normalizeBookPayload(data);
+};
 
 export const addBook = (token, bookData) =>
   request('/api/books', {

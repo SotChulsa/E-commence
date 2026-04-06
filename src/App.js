@@ -890,6 +890,11 @@ function App() {
     return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
   }, [planPaymentSecondsLeft]);
 
+  const clearStatus = useCallback(() => {
+    setAuthError('');
+    setAuthMessage('');
+    setUiMessage('');
+  }, []);
   useEffect(() => {
     if (!uiMessage || uiMessageType === 'loading') {
       return;
@@ -915,13 +920,11 @@ function App() {
   }, [planPayment?.isOpen]);
 
   const openAuth = useCallback((mode = 'signin') => {
-    setAuthError('');
-    setAuthMessage('');
-    setUiMessage('');
+    clearStatus();
     setAuthMode(mode);
     setActiveView('auth');
     setIsDrawerOpen(false);
-  }, []);
+  }, [clearStatus]);
 
   const openProfileView = () => {
     if (!user) {
@@ -1287,17 +1290,28 @@ function App() {
 
     try {
       const updatedBook = await withTokenRefresh((token) => updateBookPrice(token, bookId, parsed));
+      const nextBook = updatedBook && typeof updatedBook === 'object'
+        ? updatedBook
+        : { _id: bookId, price: parsed };
+      const nextId = nextBook._id || bookId;
+      const nextPrice = Number.isFinite(Number(nextBook.price)) ? Number(nextBook.price) : parsed;
 
       setBooks((current) =>
-        current.map((book) => (book._id === updatedBook._id ? { ...book, price: updatedBook.price } : book))
+        current.map((book) => (book._id === nextId ? { ...book, price: nextPrice } : book))
       );
       setCartItems((current) =>
-        current.map((item) => (item._id === updatedBook._id ? { ...item, price: updatedBook.price } : item))
+        current.map((item) => (item._id === nextId ? { ...item, price: nextPrice } : item))
       );
-      setPriceDrafts((current) => ({ ...current, [bookId]: String(updatedBook.price) }));
+      setPriceDrafts((current) => ({ ...current, [bookId]: String(nextPrice) }));
       showUiMessage('Price updated successfully.', 'success');
     } catch (error) {
-      showUiMessage(error.message || 'Could not update price.', 'error');
+      if (error.status === 401) {
+        showUiMessage('Unauthorized. Please sign in as admin and try again.', 'error');
+      } else if (error.status === 404) {
+        showUiMessage('Update endpoint not found on backend. Please verify backend book update route.', 'error');
+      } else {
+        showUiMessage(error.message || 'Could not update price.', 'error');
+      }
     } finally {
       setUpdatingPriceBookId('');
     }
