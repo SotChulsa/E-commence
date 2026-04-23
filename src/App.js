@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import CheckoutModal from './components/CheckoutModal';
 import AdminDashboard from './pages/admin-dashboard/AdminDashboard';
 import AddBook from './pages/add-book/AddBook';
@@ -14,6 +14,7 @@ import {
   addToWishlist,
   addToCart,
   changeMyPassword,
+  clearFreeBookInCart,
   createAbaPurchase,
   createOrder,
   forgotPassword,
@@ -31,6 +32,7 @@ import {
   registerUser,
   resetPassword,
   removeFromCart,
+  selectFreeBookInCart,
   selectSubscriptionPlan,
   updateMyProfile,
   updateBookPrice,
@@ -168,6 +170,7 @@ const PLAN_CARDS = [
 ];
 
 const PLAN_PAYMENT_TTL_SECONDS = 300;
+const PREMIUM_FREE_BOOK_MIN_SUBTOTAL = 50;
 
 const BOOK_FEATURE_TAGS = {
   trending: 'trending',
@@ -282,6 +285,10 @@ function App() {
   const [user, setUser] = useState(initialAuth.user);
   const [accessToken, setAccessToken] = useState(initialAuth.accessToken);
   const [refreshToken, setRefreshToken] = useState(initialAuth.refreshToken);
+  const accessTokenRef = useRef(initialAuth.accessToken);
+  const refreshTokenRef = useRef(initialAuth.refreshToken);
+  const refreshInFlightRef = useRef(null);
+  const sessionExpiryHandledRef = useRef(false);
 
   const [books, setBooks] = useState([]);
   const [booksLoading, setBooksLoading] = useState(true);
@@ -289,6 +296,7 @@ function App() {
   const [usingMockCatalog, setUsingMockCatalog] = useState(false);
 
   const [cartItems, setCartItems] = useState([]);
+  const [freeBookId, setFreeBookId] = useState('');
 
   const [query, setQuery] = useState('');
   const [selectedGenre, setSelectedGenre] = useState('All');
@@ -450,10 +458,24 @@ function App() {
     setProfileDraft(createProfileDraft(user));
   }, [user]);
 
+  useEffect(() => {
+    accessTokenRef.current = accessToken || '';
+  }, [accessToken]);
+
+  useEffect(() => {
+    refreshTokenRef.current = refreshToken || '';
+  }, [refreshToken]);
+
   const syncAuthState = ({ user: nextUser, accessToken: nextAccess, refreshToken: nextRefresh }) => {
     setUser(nextUser);
     setAccessToken(nextAccess);
     setRefreshToken(nextRefresh);
+    accessTokenRef.current = nextAccess || '';
+    refreshTokenRef.current = nextRefresh || '';
+
+    if (nextUser && nextAccess && nextRefresh) {
+      sessionExpiryHandledRef.current = false;
+    }
   };
 
   function showUiMessage(message, type = 'info') {
@@ -462,33 +484,76 @@ function App() {
   }
 
   const withTokenRefresh = useCallback(async (callback) => {
+    const activeAccessToken = accessTokenRef.current;
+
     try {
-      return await callback(accessToken);
+      return await callback(activeAccessToken);
     } catch (error) {
-      if (error.status !== 401 || !refreshToken) {
+      if (error.status !== 401) {
         throw error;
       }
 
+      const activeRefreshToken = refreshTokenRef.current;
+      if (!activeRefreshToken) {
+        if (!sessionExpiryHandledRef.current) {
+          sessionExpiryHandledRef.current = true;
+          syncAuthState({ user: null, accessToken: '', refreshToken: '' });
+          setCartItems([]);
+          showUiMessage('Session expired. Please sign in again.', 'error');
+          handleSetActiveView('auth');
+          setAuthMode('signin');
+        }
+
+        const missingRefreshTokenError = new Error('Session expired. Please sign in again.');
+        missingRefreshTokenError.status = 401;
+        throw missingRefreshTokenError;
+      }
+
       try {
-        const refreshed = await refreshTokens(refreshToken);
+        if (!refreshInFlightRef.current) {
+          refreshInFlightRef.current = refreshTokens(activeRefreshToken)
+            .then((refreshed) => {
+              const nextAccess = refreshed?.accessToken || '';
+              const nextRefresh = refreshed?.refreshToken || '';
+
+              if (!nextAccess || !nextRefresh) {
+                const malformedRefreshError = new Error('Invalid refresh response');
+                malformedRefreshError.status = 401;
+                throw malformedRefreshError;
+              }
+
+              setAccessToken(nextAccess);
+              setRefreshToken(nextRefresh);
+              accessTokenRef.current = nextAccess;
+              refreshTokenRef.current = nextRefresh;
+              sessionExpiryHandledRef.current = false;
+
+              return { accessToken: nextAccess, refreshToken: nextRefresh };
+            })
+            .finally(() => {
+              refreshInFlightRef.current = null;
+            });
+        }
+
+        const refreshed = await refreshInFlightRef.current;
         const nextAccess = refreshed.accessToken;
-        const nextRefresh = refreshed.refreshToken;
-        setAccessToken(nextAccess);
-        setRefreshToken(nextRefresh);
         return callback(nextAccess);
       } catch (_refreshError) {
-        syncAuthState({ user: null, accessToken: '', refreshToken: '' });
-        setCartItems([]);
-        showUiMessage('Session expired. Please sign in again.', 'error');
-        handleSetActiveView('auth');
-        setAuthMode('signin');
+        if (!sessionExpiryHandledRef.current) {
+          sessionExpiryHandledRef.current = true;
+          syncAuthState({ user: null, accessToken: '', refreshToken: '' });
+          setCartItems([]);
+          showUiMessage('Session expired. Please sign in again.', 'error');
+          handleSetActiveView('auth');
+          setAuthMode('signin');
+        }
 
         const expiredSessionError = new Error('Session expired. Please sign in again.');
         expiredSessionError.status = 401;
         throw expiredSessionError;
       }
     }
-  }, [accessToken, refreshToken]);
+  }, []);
 
   useEffect(() => {
     if (!user?._id || !accessToken) {
@@ -633,6 +698,7 @@ function App() {
       .filter(Boolean);
 
     setCartItems(mapped);
+    setFreeBookId(String(cartData?.freeBookId || ''));
   }, [books]);
 
   const refreshCartState = useCallback(async (tokenToUse, catalog) => {
@@ -643,6 +709,7 @@ function App() {
   useEffect(() => {
     if (!user || !accessToken) {
       setCartItems([]);
+      setFreeBookId('');
       return;
     }
 
@@ -651,6 +718,7 @@ function App() {
         await withTokenRefresh((token) => refreshCartState(token, books));
       } catch (_error) {
         setCartItems([]);
+        setFreeBookId('');
       }
     };
 
@@ -915,9 +983,31 @@ function App() {
     [cartItems]
   );
 
-  const cartTotal = useMemo(
+  const cartSubtotal = useMemo(
     () => cartItems.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 0), 0),
     [cartItems]
+  );
+
+  const isPremiumActive = useMemo(
+    () => user?.subscriptionPlan === 'premium' && (user?.subscriptionStatus || 'active') === 'active',
+    [user]
+  );
+
+  const isPremiumFreeBookEligible = isPremiumActive && cartSubtotal >= PREMIUM_FREE_BOOK_MIN_SUBTOTAL;
+
+  const selectedFreeBook = useMemo(
+    () => cartItems.find((item) => item._id === freeBookId) || null,
+    [cartItems, freeBookId]
+  );
+
+  const freeBookDiscount = useMemo(
+    () => (isPremiumFreeBookEligible && selectedFreeBook ? Number(selectedFreeBook.price || 0) : 0),
+    [isPremiumFreeBookEligible, selectedFreeBook]
+  );
+
+  const cartTotal = useMemo(
+    () => Math.max(0, cartSubtotal - freeBookDiscount),
+    [cartSubtotal, freeBookDiscount]
   );
 
   const wishlistBooks = useMemo(
@@ -951,6 +1041,22 @@ function App() {
     const seconds = total % 60;
     return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
   }, [planPaymentSecondsLeft]);
+
+  const planPaymentQrSrc = useMemo(() => {
+    if (planPayment?.qrImage) {
+      return planPayment.qrImage;
+    }
+
+    if (planPayment?.checkoutQrUrl) {
+      return planPayment.checkoutQrUrl;
+    }
+
+    if (planPayment?.qrValue) {
+      return `https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=${encodeURIComponent(planPayment.qrValue)}`;
+    }
+
+    return '';
+  }, [planPayment]);
 
   const clearStatus = useCallback(() => {
     setAuthError('');
@@ -1328,6 +1434,46 @@ function App() {
     }
   };
 
+  const handleSelectFreeBook = async (bookId) => {
+    if (!accessToken) {
+      showUiMessage('Please login first.', 'info');
+      openAuth('signin');
+      return;
+    }
+
+    if (!isPremiumActive) {
+      showUiMessage('Premium plan is required to claim a free book.', 'error');
+      return;
+    }
+
+    if (cartSubtotal < PREMIUM_FREE_BOOK_MIN_SUBTOTAL) {
+      showUiMessage(`Add more books to reach $${PREMIUM_FREE_BOOK_MIN_SUBTOTAL.toFixed(2)} subtotal.`, 'info');
+      return;
+    }
+
+    try {
+      await withTokenRefresh((token) => selectFreeBookInCart(token, bookId));
+      await withTokenRefresh((token) => refreshCartState(token, books));
+      showUiMessage('Free book applied for this order.', 'success');
+    } catch (error) {
+      showUiMessage(error.message || 'Could not apply free book.', 'error');
+    }
+  };
+
+  const handleClearFreeBook = async () => {
+    if (!accessToken) {
+      return;
+    }
+
+    try {
+      await withTokenRefresh((token) => clearFreeBookInCart(token));
+      await withTokenRefresh((token) => refreshCartState(token, books));
+      showUiMessage('Free book selection removed.', 'info');
+    } catch (error) {
+      showUiMessage(error.message || 'Could not clear free book.', 'error');
+    }
+  };
+
   const handleUpdateBookPrice = async (bookId) => {
     if (user?.role !== 'admin') {
       showUiMessage('Only admin can update book price.', 'error');
@@ -1628,6 +1774,7 @@ function App() {
 
     syncAuthState({ user: null, accessToken: '', refreshToken: '' });
     setCartItems([]);
+    setFreeBookId('');
     setWishlistBookIds([]);
     setOrderHistory([]);
     setExpandedOrderId('');
@@ -1950,6 +2097,13 @@ function App() {
                 cartItems={cartItems}
                 handleRemoveFromCart={handleRemoveFromCart}
                 handleIncreaseQuantity={handleIncreaseQuantity}
+                cartSubtotal={cartSubtotal}
+                freeBookId={freeBookId}
+                onSelectFreeBook={handleSelectFreeBook}
+                onClearFreeBook={handleClearFreeBook}
+                freeBookDiscount={freeBookDiscount}
+                isPremiumFreeBookEligible={isPremiumFreeBookEligible}
+                isPremiumActive={isPremiumActive}
                 cartTotal={cartTotal}
                 setActiveView={handleSetActiveView}
                 handleCheckout={handleCheckout}
@@ -2600,8 +2754,8 @@ function App() {
           </p>
 
           <div className="plan-payment-qr-wrap">
-            {planPayment.qrImage ? (
-              <img className="plan-payment-qr" src={planPayment.qrImage} alt="ABA QR Code" />
+            {planPaymentQrSrc ? (
+              <img className="plan-payment-qr" src={planPaymentQrSrc} alt="ABA QR Code" />
             ) : (
               <div className="plan-payment-qr-placeholder">ABA QR Code</div>
             )}

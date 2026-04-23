@@ -160,6 +160,19 @@ export const removeFromCart = (token, bookId) =>
     ...withAuth(token),
   });
 
+export const selectFreeBookInCart = (token, bookId) =>
+  request('/api/cart/free-book', {
+    method: 'POST',
+    ...withAuth(token),
+    body: JSON.stringify({ bookId }),
+  });
+
+export const clearFreeBookInCart = (token) =>
+  request('/api/cart/free-book', {
+    method: 'DELETE',
+    ...withAuth(token),
+  });
+
 export const createOrder = (token, payload) =>
   request('/api/orders', {
     method: 'POST',
