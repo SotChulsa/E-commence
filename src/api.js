@@ -273,3 +273,15 @@ export const getAdminStats = (token) =>
   request('/api/admin/stats', {
     ...withAuth(token),
   });
+
+export const getAdminOrders = (token) =>
+  request('/api/admin/orders', {
+    ...withAuth(token),
+  });
+
+export const updateAdminOrderStatus = (token, orderId, status) =>
+  request(`/api/admin/orders/${orderId}`, {
+    method: 'PUT',
+    ...withAuth(token),
+    body: JSON.stringify({ status }),
+  });

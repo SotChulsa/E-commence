@@ -109,6 +109,59 @@
   margin-right: 0;
 }
 
+.admin-order-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-order-actions select {
+  border: 1px solid #d2d7e2;
+  border-radius: 8px;
+  min-height: 32px;
+  padding: 0 10px;
+  background: #fff;
+  color: #222633;
+  font-size: 13px;
+}
+
+.admin-order-actions .edit-btn {
+  margin-right: 0;
+}
+
+.admin-order-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.admin-order-toolbar input {
+  min-width: 260px;
+  min-height: 36px;
+  border: 1px solid #d2d7e2;
+  border-radius: 10px;
+  padding: 0 12px;
+  background: #fff;
+  color: #222633;
+  font-size: 14px;
+}
+
+.admin-order-toolbar button {
+  min-height: 36px;
+  border: 1px solid #ced3de;
+  border-radius: 9px;
+  padding: 0 12px;
+  font-size: 13px;
+  background: #f8f9fc;
+  color: #222633;
+}
+
+.admin-order-toolbar button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .admin-dashboard-view .profile-actions {
   margin-top: 2px;
   display: inline-flex;
@@ -179,6 +232,20 @@
   .edit-btn,
   .delete-btn {
     font-size: 13px;
+  }
+
+  .admin-order-actions {
+    flex-wrap: wrap;
+  }
+
+  .admin-order-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-order-toolbar input,
+  .admin-order-toolbar button {
+    width: 100%;
   }
 
   .admin-dashboard-view .profile-actions {
