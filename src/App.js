@@ -1,10 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import CheckoutModal from './components/CheckoutModal';
-import AdminDashboard from './pages/admin-dashboard/AdminDashboard';
-import AddBook from './pages/add-book/AddBook';
-import Cart from './pages/cart/cart';
-import BookDetail from './pages/book-detail/BookDetail';
-import Home from './pages/home/Home';
 import './App.css';
 import profile from './profile.svg';
 import heart from './heart.svg';
@@ -38,6 +33,12 @@ import {
   updateBookPrice,
   verifyOtp,
 } from './api';
+
+const AdminDashboard = lazy(() => import('./pages/admin-dashboard/AdminDashboard'));
+const AddBook = lazy(() => import('./pages/add-book/AddBook'));
+const Cart = lazy(() => import('./pages/cart/cart'));
+const BookDetail = lazy(() => import('./pages/book-detail/BookDetail'));
+const Home = lazy(() => import('./pages/home/Home'));
 
 const AUTH_STORAGE_KEY = 'digipaper_auth';
 const THEME_STORAGE_KEY = 'digipaper_theme';
@@ -1896,37 +1897,39 @@ function App() {
             </header>
 
             {activeView === 'home' ? (
-              <Home
-                trendingBook={trendingBook}
-                openBookDetail={openBookDetail}
-                featuredBooks={featuredBooks}
-                featuredIndex={featuredIndex}
-                setFeaturedIndex={setFeaturedIndex}
-                wishlistBookIds={wishlistBookIds}
-                toggleWishlist={toggleWishlist}
-                handleAddToCart={handleAddToCart}
-                addingBookId={addingBookId}
-                categoryTabs={categoryTabs}
-                selectedCategoryTab={selectedCategoryTab}
-                setSelectedCategoryTab={setSelectedCategoryTab}
-                setSelectedGenre={setSelectedGenre}
-                booksLoading={booksLoading}
-                booksError={booksError}
-                usingMockCatalog={usingMockCatalog}
-                books={books}
-                topSellers={topSellers}
-                recommended={recommended}
-                trendingBooks={trendingList}
-                bestSellers={bestSellers}
-                newArrivals={newArrivals}
-                uiMessage={uiMessage}
-                uiMessageType={uiMessageType}
-                user={user}
-                priceDrafts={priceDrafts}
-                setPriceDrafts={setPriceDrafts}
-                handleUpdateBookPrice={handleUpdateBookPrice}
-                updatingPriceBookId={updatingPriceBookId}
-              />
+              <Suspense fallback={<p className="section-note">Loading view...</p>}>
+                <Home
+                  trendingBook={trendingBook}
+                  openBookDetail={openBookDetail}
+                  featuredBooks={featuredBooks}
+                  featuredIndex={featuredIndex}
+                  setFeaturedIndex={setFeaturedIndex}
+                  wishlistBookIds={wishlistBookIds}
+                  toggleWishlist={toggleWishlist}
+                  handleAddToCart={handleAddToCart}
+                  addingBookId={addingBookId}
+                  categoryTabs={categoryTabs}
+                  selectedCategoryTab={selectedCategoryTab}
+                  setSelectedCategoryTab={setSelectedCategoryTab}
+                  setSelectedGenre={setSelectedGenre}
+                  booksLoading={booksLoading}
+                  booksError={booksError}
+                  usingMockCatalog={usingMockCatalog}
+                  books={books}
+                  topSellers={topSellers}
+                  recommended={recommended}
+                  trendingBooks={trendingList}
+                  bestSellers={bestSellers}
+                  newArrivals={newArrivals}
+                  uiMessage={uiMessage}
+                  uiMessageType={uiMessageType}
+                  user={user}
+                  priceDrafts={priceDrafts}
+                  setPriceDrafts={setPriceDrafts}
+                  handleUpdateBookPrice={handleUpdateBookPrice}
+                  updatingPriceBookId={updatingPriceBookId}
+                />
+              </Suspense>
             ) : null}
 
             {activeView === 'plans' ? (
@@ -1992,45 +1995,51 @@ function App() {
             ) : null}
 
             {activeView === 'admin-dashboard' ? (
-              <AdminDashboard
-                adminStats={adminStats}
-                adminStatsLoading={adminStatsLoading}
-                adminStatsError={adminStatsError}
-                setActiveView={handleSetActiveView}
-                accessToken={accessToken}
-                withTokenRefresh={withTokenRefresh}
-                showUiMessage={showUiMessage}
-                usingMockCatalog={usingMockCatalog}
-                onBookDeleted={handleBookDeleted}
-              />
+              <Suspense fallback={<p className="section-note">Loading view...</p>}>
+                <AdminDashboard
+                  adminStats={adminStats}
+                  adminStatsLoading={adminStatsLoading}
+                  adminStatsError={adminStatsError}
+                  setActiveView={handleSetActiveView}
+                  accessToken={accessToken}
+                  withTokenRefresh={withTokenRefresh}
+                  showUiMessage={showUiMessage}
+                  usingMockCatalog={usingMockCatalog}
+                  onBookDeleted={handleBookDeleted}
+                />
+              </Suspense>
             ) : null}
 
             {activeView === 'add-book' || activeView === 'edit-book' ? (
-              <AddBook
-                setActiveView={handleSetActiveView}
-                accessToken={accessToken}
-                withTokenRefresh={withTokenRefresh}
-                showUiMessage={showUiMessage}
-                editBook={viewParams.book}
-              />
+              <Suspense fallback={<p className="section-note">Loading view...</p>}>
+                <AddBook
+                  setActiveView={handleSetActiveView}
+                  accessToken={accessToken}
+                  withTokenRefresh={withTokenRefresh}
+                  showUiMessage={showUiMessage}
+                  editBook={viewParams.book}
+                />
+              </Suspense>
             ) : null}
 
             {activeView === 'cart-page' ? (
-              <Cart
-                cartItems={cartItems}
-                handleRemoveFromCart={handleRemoveFromCart}
-                handleIncreaseQuantity={handleIncreaseQuantity}
-                cartSubtotal={cartSubtotal}
-                freeBookId={freeBookId}
-                onSelectFreeBook={handleSelectFreeBook}
-                onClearFreeBook={handleClearFreeBook}
-                freeBookDiscount={freeBookDiscount}
-                isPremiumFreeBookEligible={isPremiumFreeBookEligible}
-                isPremiumActive={isPremiumActive}
-                cartTotal={cartTotal}
-                setActiveView={handleSetActiveView}
-                handleCheckout={handleCheckout}
-              />
+              <Suspense fallback={<p className="section-note">Loading view...</p>}>
+                <Cart
+                  cartItems={cartItems}
+                  handleRemoveFromCart={handleRemoveFromCart}
+                  handleIncreaseQuantity={handleIncreaseQuantity}
+                  cartSubtotal={cartSubtotal}
+                  freeBookId={freeBookId}
+                  onSelectFreeBook={handleSelectFreeBook}
+                  onClearFreeBook={handleClearFreeBook}
+                  freeBookDiscount={freeBookDiscount}
+                  isPremiumFreeBookEligible={isPremiumFreeBookEligible}
+                  isPremiumActive={isPremiumActive}
+                  cartTotal={cartTotal}
+                  setActiveView={handleSetActiveView}
+                  handleCheckout={handleCheckout}
+                />
+              </Suspense>
             ) : null}
 
             {activeView === 'profile' ? (
@@ -2355,16 +2364,18 @@ function App() {
             ) : null}
 
             {activeView === 'book-detail' ? (
-              <BookDetail
-                activeDetailBook={activeDetailBook}
-                handleAddToCart={handleAddToCart}
-                addingBookId={addingBookId}
-                wishlistBookIds={wishlistBookIds}
-                toggleWishlist={toggleWishlist}
-                detailRecommendations={detailRecommendations}
-                openBookDetail={openBookDetail}
-                setActiveView={handleSetActiveView}
-              />
+              <Suspense fallback={<p className="section-note">Loading view...</p>}>
+                <BookDetail
+                  activeDetailBook={activeDetailBook}
+                  handleAddToCart={handleAddToCart}
+                  addingBookId={addingBookId}
+                  wishlistBookIds={wishlistBookIds}
+                  toggleWishlist={toggleWishlist}
+                  detailRecommendations={detailRecommendations}
+                  openBookDetail={openBookDetail}
+                  setActiveView={handleSetActiveView}
+                />
+              </Suspense>
             ) : null}
 
           </>
