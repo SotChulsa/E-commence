@@ -1,4 +1,10 @@
-const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+const isLocalhost =
+  typeof window !== 'undefined' &&
+  ['localhost', '127.0.0.1'].includes(window.location.hostname);
+
+const API_BASE = isLocalhost
+  ? 'http://localhost:5000'
+  : process.env.REACT_APP_API_URL || 'https://vimean-backend.onrender.com';
 
 const request = async (path, options = {}) => {
   const { headers: customHeaders = {}, ...restOptions } = options;
@@ -7,6 +13,7 @@ const request = async (path, options = {}) => {
   try {
     response = await fetch(`${API_BASE}${path}`, {
       ...restOptions,
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
         ...customHeaders,

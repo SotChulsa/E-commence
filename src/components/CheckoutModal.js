@@ -1,9 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import './CheckoutModal.css';
 
+const DEFAULT_QR_TTL_SECONDS = 120;
+
+const resolveQrTtlSeconds = (payment) => {
+  const ttlSeconds = Number(payment?.qrTtlSeconds);
+  return Number.isFinite(ttlSeconds) && ttlSeconds > 0 ? ttlSeconds : DEFAULT_QR_TTL_SECONDS;
+};
+
 const CheckoutModal = ({ isOpen, onClose, cartItems, cartTotal, user, onPlaceOrder, onCreateAbaPurchase }) => {
   const [step, setStep] = useState('details');
-  const [countdown, setCountdown] = useState(600);
+  const [countdown, setCountdown] = useState(DEFAULT_QR_TTL_SECONDS);
   const [orderId, setOrderId] = useState('');
   const [abaPayment, setAbaPayment] = useState(null);
   const [submitError, setSubmitError] = useState('');
@@ -38,7 +45,7 @@ const CheckoutModal = ({ isOpen, onClose, cartItems, cartTotal, user, onPlaceOrd
 
   const resetModal = () => {
     setStep('details');
-    setCountdown(600);
+    setCountdown(DEFAULT_QR_TTL_SECONDS);
     setOrderId('');
     setAbaPayment(null);
     setSubmitError('');
@@ -67,6 +74,8 @@ const CheckoutModal = ({ isOpen, onClose, cartItems, cartTotal, user, onPlaceOrd
       setCountdown((current) => {
         if (current <= 0) {
           clearInterval(timer);
+          setSubmitError('Payment failed. QR session expired.');
+          setStep('failed');
           return 0;
         }
         return current - 1;
@@ -107,7 +116,7 @@ const CheckoutModal = ({ isOpen, onClose, cartItems, cartTotal, user, onPlaceOrd
       });
 
       setAbaPayment(payment || null);
-      setCountdown(600);
+      setCountdown(resolveQrTtlSeconds(payment));
       setStep('scan');
     } catch (error) {
       setSubmitError(error.message || 'Could not initialize ABA payment.');
@@ -118,7 +127,8 @@ const CheckoutModal = ({ isOpen, onClose, cartItems, cartTotal, user, onPlaceOrd
 
   const handleCompletePayment = async () => {
     if (countdown <= 0) {
-      setSubmitError('QR session expired. Please go back and generate a new payment QR.');
+      setSubmitError('Payment failed. QR session expired.');
+      setStep('failed');
       return;
     }
 
@@ -143,6 +153,12 @@ const CheckoutModal = ({ isOpen, onClose, cartItems, cartTotal, user, onPlaceOrd
   const handleClose = () => {
     resetModal();
     onClose();
+  };
+
+  const handleGoHome = () => {
+    resetModal();
+    onClose();
+    window.location.assign('/');
   };
 
   const firstItem = cartItems && cartItems.length > 0 ? cartItems[0] : null;
@@ -330,6 +346,17 @@ const CheckoutModal = ({ isOpen, onClose, cartItems, cartTotal, user, onPlaceOrd
               Continue Shopping
             </button>
             <div className="success-toast">Payment confirmed!</div>
+          </section>
+        ) : null}
+
+        {step === 'failed' ? (
+          <section className="success-screen">
+            <div className="success-check" style={{ background: '#d93b3b' }}>!</div>
+            <h2>Payment Failed</h2>
+            <p>{submitError || 'QR session expired.'}</p>
+            <button type="button" className="continue-shopping-btn" onClick={handleGoHome}>
+              Go to Home Page
+            </button>
           </section>
         ) : null}
       </div>
