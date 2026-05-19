@@ -19,3 +19,8 @@ Deadline: 6 May 2026
 3.1	Manage book status			
 3.2	Manage orders and users			
 3.3	Admin login dashboard			
+
+Deployment config
+
+- Frontend API base URL for Vercel: `REACT_APP_API_URL=https://vimean-backend.onrender.com`
+- The frontend already falls back to the Render backend URL in `src/api.js`, but setting the Vercel env var keeps builds explicit and avoids surprises.

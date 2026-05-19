@@ -4,7 +4,7 @@ const isLocalhost =
 
 const API_BASE = isLocalhost
   ? 'http://localhost:5000'
-  : process.env.REACT_APP_API_URL || 'https://vimean-backend.onrender.com';
+  : process.env.REACT_APP_API_URL || 'https://vimean-backend-production.up.railway.app';
 
 const request = async (path, options = {}) => {
   const { headers: customHeaders = {}, ...restOptions } = options;

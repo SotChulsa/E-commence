@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import './CheckoutModal.css';
 
-const DEFAULT_QR_TTL_SECONDS = 120;
+const DEFAULT_QR_TTL_SECONDS = 600;
 
 const resolveQrTtlSeconds = (payment) => {
   const ttlSeconds = Number(payment?.qrTtlSeconds);
